@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Send, RotateCcw, MessageSquare, Mic, Map } from 'lucide-react'
 import PageWrapper from '@/components/layout/PageWrapper'
@@ -46,7 +46,7 @@ export default function AIAdvisor() {
 
   const {
     provider, setProvider,
-    messages, isStreaming, streamError,
+    messages, isStreaming,
     sendChatMessage, clearChat,
     startInterview, currentQuestion, interviewAnswers,
     submitInterviewAnswer, interviewQuestions,
@@ -54,7 +54,6 @@ export default function AIAdvisor() {
   } = useAI()
 
   const questions = interviewTopic ? interviewQuestions[interviewTopic] : []
-  const isInterviewDone = interviewStarted && currentQuestion >= 5
 
   const handleSend = () => {
     if (!input.trim() || isStreaming) return
@@ -177,7 +176,7 @@ export default function AIAdvisor() {
             {!interviewStarted ? (
               <div className="card space-y-4">
                 <h3 className="section-title">Choose Interview Type</h3>
-                <p className="text-sm text-text-secondary">I'll ask you 5 questions and evaluate your answers with AI feedback.</p>
+                <p className="text-sm text-text-secondary">I&apos;ll ask you 5 questions and evaluate your answers with AI feedback.</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {INTERVIEW_TOPICS.map((topic) => (
                     <motion.button
@@ -272,9 +271,9 @@ export default function AIAdvisor() {
             {!roadmapPlan ? (
               <div className="card space-y-4">
                 <h3 className="section-title">Generate Your Roadmap</h3>
-                <p className="text-sm text-text-secondary">Tell me your career goal and I'll create a personalized week-by-week plan.</p>
+                <p className="text-sm text-text-secondary">Tell me your career goal and I&apos;ll create a personalized week-by-week plan.</p>
                 <div>
-                  <label className="label">What's your goal?</label>
+                  <label className="label">What&apos;s your goal?</label>
                   <input
                     className="input"
                     value={roadmapGoal}

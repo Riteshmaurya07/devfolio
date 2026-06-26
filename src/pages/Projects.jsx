@@ -1,12 +1,10 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Plus, ExternalLink, Github, Trash2, Edit2 } from 'lucide-react'
+import { Plus, ExternalLink, Github, Trash2 } from 'lucide-react'
 import PageWrapper from '@/components/layout/PageWrapper'
 import KanbanBoard from '@/components/kanban/KanbanBoard'
 import TaskCard from '@/components/kanban/TaskCard'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
-import { LangBadge } from '@/components/ui/Badge'
 import useStreakStore from '@/store/streakStore'
 import toast from 'react-hot-toast'
 

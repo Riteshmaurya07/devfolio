@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import {
   streamAIResponse,
-  simulateMockStream,
   AI_PROVIDERS,
 } from '@/utils/aiService'
 
@@ -184,7 +183,11 @@ const MOCK_ROADMAP = (goal) => `# 12-Week Roadmap: ${goal}
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useAI() {
-  const [provider, setProvider] = useState(AI_PROVIDERS.MOCK)
+  const [provider, setProvider] = useState(
+    import.meta.env.VITE_GEMINI_API_KEY && import.meta.env.VITE_GEMINI_API_KEY !== 'your_gemini_api_key_here'
+      ? AI_PROVIDERS.GEMINI
+      : AI_PROVIDERS.MOCK
+  )
   const [messages, setMessages] = useState([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamError, setStreamError] = useState(null)

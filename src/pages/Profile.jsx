@@ -11,20 +11,15 @@ import {
   Building,
   FileText,
   Award,
-  Zap,
-  Cpu,
-  Bookmark,
   Calendar
 } from 'lucide-react'
 import RadarChartComponent from '@/components/charts/RadarChartComponent'
 import { LangBadge } from '@/components/ui/Badge'
 import { SkeletonCard } from '@/components/ui/SkeletonCard'
-import { useGitHub } from '@/hooks/useGitHub'
 import useAuthStore from '@/store/authStore'
 import useConnectedAccountsStore from '@/store/connectedAccountsStore'
 import { platformStatsService } from '@/utils/platformStatsService'
 import { generateMockStats } from '@/utils/mockStatsGenerator'
-import { calcGitHubStreak } from '@/utils/calcStreak'
 import toast from 'react-hot-toast'
 
 const PLATFORM_ICONS = {
@@ -187,7 +182,6 @@ export default function Profile() {
         let xp = 0
         let displaySolved = 0
         let displayContests = 0
-        let displayCommits = 0
         let displayStars = 0
         let displayContributions = 0
 
@@ -202,7 +196,6 @@ export default function Profile() {
             const contributions = pStats.contributions?.reduce((sum, c) => sum + c.count, 0) || commits
 
             displayStars += stars
-            displayCommits += commits
             displayContributions += contributions
             xp += contributions * 12
             xp += stars * 45
@@ -252,7 +245,8 @@ export default function Profile() {
     }
 
     loadProfileData()
-  }, [username, location.search, user?.login, store.accounts, store.stats])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [username, location.search, user?.login])
 
   // Generate share link
   const handleCopyLink = () => {

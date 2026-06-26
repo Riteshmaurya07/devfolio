@@ -1,5 +1,4 @@
 import { forwardRef } from 'react'
-import { Mail, Phone, MapPin, Globe, Github, Linkedin } from 'lucide-react'
 
 const ResumePreview = forwardRef(function ResumePreview({ data }, ref) {
   const skills = data.skills

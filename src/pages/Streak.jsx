@@ -59,7 +59,7 @@ export default function Streak() {
 
         {/* Daily goals */}
         <div className="space-y-3">
-          <h3 className="section-title">Today's Goals</h3>
+          <h3 className="section-title">Today&apos;s Goals</h3>
           <div className="space-y-2">
             {dailyGoals.map((goal) => (
               <GoalCheckbox

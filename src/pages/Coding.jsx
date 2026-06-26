@@ -5,7 +5,6 @@ import PieChartComponent from '@/components/charts/PieChartComponent'
 import BarChartComponent from '@/components/charts/BarChartComponent'
 import AreaChartComponent from '@/components/charts/AreaChartComponent'
 import { VerdictBadge, DifficultyBadge } from '@/components/ui/Badge'
-import useAuthStore from '@/store/authStore'
 import useConnectedAccountsStore from '@/store/connectedAccountsStore'
 import { formatTimestamp } from '@/utils/formatDate'
 import {
@@ -16,7 +15,6 @@ import {
   RefreshCw,
   AlertTriangle,
   Award,
-  Check,
   Shield,
   BookOpen,
   Target,
@@ -133,7 +131,7 @@ const getRatingChartData = (platformId, platformStats) => {
         Rating: r.rating || 0,
       }))
     case 'topcoder':
-      return [...(platformStats.recentContests || [])].reverse().map((r, i) => ({
+      return [...(platformStats.recentContests || [])].reverse().map((r) => ({
         name: r.name || '',
         Rating: (platformStats.rating || 1200) + (r.ratingChange || 0),
       }))
@@ -143,7 +141,6 @@ const getRatingChartData = (platformId, platformStats) => {
 }
 
 export default function Coding() {
-  const { user } = useAuthStore()
   const { accounts, stats, syncing, syncAccount } = useConnectedAccountsStore()
   const [selectedPlatform, setSelectedPlatform] = useState('leetcode')
   const [expanded, setExpanded] = useState(false)
@@ -161,11 +158,12 @@ export default function Coding() {
   }, [accounts, codingPlatforms, selectedPlatform])
 
   // Sync selected platform on change/mount
+  const isConnected = accounts[selectedPlatform]?.connected
   useEffect(() => {
-    if (selectedPlatform && accounts[selectedPlatform]?.connected) {
+    if (selectedPlatform && isConnected) {
       syncAccount(selectedPlatform)
     }
-  }, [selectedPlatform, syncAccount])
+  }, [selectedPlatform, syncAccount, isConnected])
 
   if (codingPlatforms.length === 0) {
     return (

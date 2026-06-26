@@ -21,7 +21,6 @@ export default function KanbanBoard({
   columnColors = {},
 }) {
   const [activeItem, setActiveItem] = useState(null)
-  const [activeColumn, setActiveColumn] = useState(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -41,12 +40,10 @@ export default function KanbanBoard({
     const col = findColumnOfItem(active.id)
     const item = items[col]?.find((i) => i.id === active.id)
     setActiveItem(item)
-    setActiveColumn(col)
   }
 
   const handleDragEnd = ({ active, over }) => {
     setActiveItem(null)
-    setActiveColumn(null)
 
     if (!over) return
 

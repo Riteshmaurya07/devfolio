@@ -18,7 +18,13 @@ export const AI_PROVIDERS = {
   MOCK: 'mock',
 }
 
-const GEMINI_MODEL = 'gemini-2.0-flash'
+// Models tried in order — first available one wins.
+const GEMINI_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-preview-05-20',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-exp',
+]
 const ANTHROPIC_MODEL = 'claude-sonnet-4-6'
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -34,28 +40,77 @@ Context about the user: ${context}`
 
 async function streamGemini({ prompt, context, onChunk, onDone, onError }) {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-  if (!apiKey) {
+  if (!apiKey || apiKey === 'your_gemini_api_key_here') {
     onError(new Error('VITE_GEMINI_API_KEY is not set. Please add it to your .env file.'))
     return
   }
 
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
+  const genAI = new GoogleGenerativeAI(apiKey)
+  const fullPrompt = `${buildSystemPrompt(context)}\n\nUser: ${prompt}`
+  const isQuotaOrNotFound = (err) =>
+    err?.status === 429 || err?.status === 404 ||
+    err?.message?.includes('429') || err?.message?.includes('404') ||
+    err?.message?.includes('quota') || err?.message?.includes('not found')
 
-    const fullPrompt = `${buildSystemPrompt(context)}\n\nUser: ${prompt}`
-    const result = await model.generateContentStream(fullPrompt)
+  let lastError = null
+  for (const modelName of GEMINI_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName })
+      const result = await model.generateContentStream(fullPrompt)
 
-    let accumulated = ''
-    for await (const chunk of result.stream) {
-      const text = chunk.text()
-      accumulated += text
-      onChunk(accumulated)
+      let accumulated = ''
+      for await (const chunk of result.stream) {
+        accumulated += chunk.text()
+        onChunk(accumulated)
+      }
+      onDone(accumulated)
+      return // success — stop trying further models
+    } catch (err) {
+      lastError = err
+      if (isQuotaOrNotFound(err)) {
+        // Before giving up on this model, try non-streaming generateContent
+        // (same as what works in CodeXLive with the same key)
+        try {
+          const model = genAI.getGenerativeModel({ model: modelName })
+          const result = await model.generateContent(fullPrompt)
+          const text = result.response.text()
+          // Simulate streaming word-by-word for consistent UX
+          let accumulated = ''
+          const words = text.split(' ')
+          for (const word of words) {
+            accumulated += (accumulated ? ' ' : '') + word
+            onChunk(accumulated)
+            await new Promise((r) => setTimeout(r, 15))
+          }
+          onDone(accumulated)
+          return
+        } catch (_) {
+          // non-streaming also failed — try next model
+          continue
+        }
+      }
+      // Non-quota error (network, auth, etc.) — break immediately
+      onError(err)
+      return
     }
-    onDone(accumulated)
-  } catch (err) {
-    onError(err)
   }
+
+  // All models exhausted — stream a friendly diagnostic
+  const quota429 = lastError?.status === 429 || lastError?.message?.includes('429') || lastError?.message?.includes('quota')
+  const diagMsg = quota429
+    ? '⚠️ **All Gemini models are quota-limited for your project.**\n\n' +
+      'Your Google AI Studio project shows `limit: 0` — meaning no free-tier quota is allocated. ' +
+      'This is a **regional/project configuration issue**, not a usage issue.\n\n' +
+      '**Steps to fix:**\n' +
+      '1. Go to [aistudio.google.com/app/usage](https://aistudio.google.com/app/usage) → click **Rate Limit** in the left sidebar\n' +
+      '2. Check if any model shows `0 RPM` — if yes, your project needs quota adjustment\n' +
+      '3. Try creating a **new project** in AI Studio and generating a fresh API key for it\n' +
+      '4. If you\'re in India, some Gemini models have regional restrictions — try `gemini-pro` via Vertex AI\n\n' +
+      '**For now:** Switch the provider dropdown to **Mock (Demo)** to use simulated AI responses.'
+    : `⚠️ **Gemini API error:** ${lastError?.message || 'Unknown error'}.\n\nSwitch to **Mock (Demo)** mode to continue testing.`
+
+  let acc = ''
+  simulateMockStream(diagMsg, (w) => { acc += w; onChunk(acc) }, () => onDone(acc))
 }
 
 // ─── Anthropic (backend proxy) streaming ────────────────────────────────────────
@@ -93,9 +148,13 @@ async function streamAnthropic({ prompt, context, onChunk, onDone, onError }) {
     const decoder = new TextDecoder()
     let accumulated = ''
 
-    while (true) {
+    let reading = true
+    while (reading) {
       const { done, value } = await reader.read()
-      if (done) break
+      if (done) {
+        reading = false
+        break
+      }
       const chunk = decoder.decode(value, { stream: true })
       accumulated += chunk
       onChunk(accumulated)

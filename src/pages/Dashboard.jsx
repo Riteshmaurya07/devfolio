@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import {
   Star,
   GitCommit,
-  Briefcase,
   Target,
   Flame,
   Link,
@@ -66,7 +65,6 @@ export default function Dashboard() {
     accounts,
     stats,
     syncing,
-    xp,
     level,
     title,
     connectAccount,
@@ -84,6 +82,7 @@ export default function Dashboard() {
   useEffect(() => {
     const connected = Object.keys(accounts).filter(k => accounts[k].connected)
     connected.forEach(p => syncAccount(p))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [syncAccount])
 
   // Filtering platforms that are connected AND selected to show on dashboard

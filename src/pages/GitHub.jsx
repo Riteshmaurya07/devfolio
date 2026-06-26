@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Star, GitFork, ExternalLink, Users, AlertCircle, GitPullRequest, Package } from 'lucide-react'
+import { Star, GitFork, ExternalLink, AlertCircle, GitPullRequest, Package } from 'lucide-react'
 import PageWrapper from '@/components/layout/PageWrapper'
 import BarChartComponent from '@/components/charts/BarChartComponent'
 import PieChartComponent from '@/components/charts/PieChartComponent'
@@ -9,7 +9,6 @@ import { SkeletonCard, SkeletonGrid } from '@/components/ui/SkeletonCard'
 import useAuthStore from '@/store/authStore'
 import useUserDataStore from '@/store/userDataStore'
 import { useGitHub } from '@/hooks/useGitHub'
-import { formatRelative } from '@/utils/formatDate'
 
 function generateCommitData(contributions = [], events = []) {
   const months = []
@@ -42,16 +41,15 @@ function generateCommitData(contributions = [], events = []) {
 export default function GitHub() {
   const { user } = useAuthStore()
   const { githubData, repos, events, languages, contributions, githubLoading } = useUserDataStore()
-  const { fetchUserData, error } = useGitHub()
+  const { fetchUserData } = useGitHub()
 
   useEffect(() => {
     if (user?.login && !githubData) fetchUserData(user.login)
-  }, [user?.login])
+  }, [user?.login, githubData, fetchUserData])
 
   const loading = githubLoading || !githubData
   const topRepos = [...repos].sort((a, b) => b.stargazers_count - a.stargazers_count).slice(0, 6)
   const totalStars = repos.reduce((sum, r) => sum + (r.stargazers_count || 0), 0)
-  const totalForks = repos.reduce((sum, r) => sum + (r.forks_count || 0), 0)
 
   const langData = Object.entries(languages)
     .sort((a, b) => b[1] - a[1])

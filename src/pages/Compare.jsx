@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Share2, Search, Users } from 'lucide-react'
 import PageWrapper from '@/components/layout/PageWrapper'
@@ -9,14 +9,6 @@ import { SkeletonCard } from '@/components/ui/SkeletonCard'
 import { useGitHub } from '@/hooks/useGitHub'
 import { captureAndShare } from '@/utils/captureScreenshot'
 import toast from 'react-hot-toast'
-
-function debounce(fn, delay) {
-  let timer
-  return (...args) => {
-    clearTimeout(timer)
-    timer = setTimeout(() => fn(...args), delay)
-  }
-}
 
 export default function Compare() {
   const [username1, setUsername1] = useState('')

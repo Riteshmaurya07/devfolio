@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, ExternalLink, Trash2, Calendar, DollarSign, Search, MapPin, Settings, Key, Sparkles, Loader2 } from 'lucide-react'
+import { Plus, ExternalLink, Trash2, Calendar, DollarSign, Search, MapPin, Settings, Key, Sparkles } from 'lucide-react'
 import PageWrapper from '@/components/layout/PageWrapper'
 import KanbanBoard from '@/components/kanban/KanbanBoard'
 import TaskCard from '@/components/kanban/TaskCard'
@@ -92,11 +92,12 @@ export default function Jobs() {
   const stats = getStats()
 
   // Trigger search on tab switch if empty
+  const resultsCount = searchResults.length
   useEffect(() => {
-    if (activeTab === 'search' && searchResults.length === 0 && !searchLoading) {
+    if (activeTab === 'search' && resultsCount === 0 && !searchLoading) {
       searchJobs(query, location)
     }
-  }, [activeTab])
+  }, [activeTab, resultsCount, searchLoading, searchJobs, query, location])
 
   const handleAdd = (col) => {
     setTargetColumn(col || 'Applied')
@@ -393,7 +394,7 @@ export default function Jobs() {
               </div>
               <h3 className="text-base font-semibold text-text-primary">No live jobs found</h3>
               <p className="text-sm text-text-muted max-w-sm mx-auto">
-                Try searching for another role or location, or select "Demo Mode (Mock Jobs)" to browse offline examples.
+                Try searching for another role or location, or select &quot;Demo Mode (Mock Jobs)&quot; to browse offline examples.
               </p>
               <Button onClick={() => searchJobs(query, location)} className="mx-auto mt-2">
                 Search Again

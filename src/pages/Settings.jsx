@@ -3,7 +3,6 @@ import { motion } from 'framer-motion'
 import {
   Github,
   Linkedin,
-  Globe,
   RefreshCw,
   Eye,
   EyeOff,
@@ -11,7 +10,6 @@ import {
   Check,
   AlertTriangle,
   Sparkles,
-  Link,
   Shield,
   Info
 } from 'lucide-react'

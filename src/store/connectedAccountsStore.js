@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { platformStatsService } from '@/utils/platformStatsService'
-import { calcGitHubStreak } from '@/utils/calcStreak'
 import axios from 'axios'
 
 const initialAccountsState = {

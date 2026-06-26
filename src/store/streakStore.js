@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { format, differenceInDays, parseISO, isToday, isYesterday } from 'date-fns'
+import { format } from 'date-fns'
 
 const DAILY_GOALS = [
   { id: 'leetcode', label: '1 LeetCode problem', icon: '💻' },
@@ -67,9 +67,10 @@ const useStreakStore = create(
 
         let streak = 0
         let checkDate = new Date()
+        let running = true
 
         // Walk backwards from today
-        while (true) {
+        while (running) {
           const dateKey = format(checkDate, 'yyyy-MM-dd')
           const record = history[dateKey]
           const allDone = record && DAILY_GOALS.every((g) => record[g.id])
@@ -79,7 +80,7 @@ const useStreakStore = create(
             checkDate = new Date(checkDate)
             checkDate.setDate(checkDate.getDate() - 1)
           } else {
-            break
+            running = false
           }
         }
 

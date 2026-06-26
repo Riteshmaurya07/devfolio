@@ -220,7 +220,9 @@ export const platformStatsService = {
     let streakCalendar = {}
     try {
       streakCalendar = JSON.parse(calendar?.submissionCalendar || '{}')
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to parse submission calendar', e)
+    }
 
     const recentSubmissions = (submissionsData?.recentAcSubmissionList || []).map((s) => ({
       id: s.id,

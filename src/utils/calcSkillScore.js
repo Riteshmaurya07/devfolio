@@ -18,14 +18,6 @@ const LANGUAGE_WEIGHTS = {
   CSS: 2,
 }
 
-const RADAR_SKILLS = [
-  'Frontend',
-  'Backend',
-  'DSA',
-  'System Design',
-  'DevOps',
-  'Mobile',
-]
 
 export function calcSkillScore(languages = {}, repos = [], leetcodeData = null) {
   const topLangs = Object.entries(languages)

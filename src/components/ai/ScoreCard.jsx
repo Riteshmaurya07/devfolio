@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Trophy, Star, CheckCircle, XCircle } from 'lucide-react'
+import { Trophy, Star, XCircle } from 'lucide-react'
 
 function ScoreBar({ score, max = 10 }) {
   const pct = (score / max) * 100

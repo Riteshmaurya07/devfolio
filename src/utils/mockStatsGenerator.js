@@ -274,7 +274,6 @@ export function generateMockStats(platform, username) {
     case 'github': {
       const repoCount = range(10, 60)
       const stars = range(5, 350)
-      const commits = range(150, 2000)
       return {
         profile: {
           login: username,
@@ -298,7 +297,7 @@ export function generateMockStats(platform, username) {
           language: choice(['JavaScript', 'TypeScript', 'Python', 'Go', 'Rust', 'C++']),
           updated_at: new Date(Date.now() - range(0, 30) * 24 * 60 * 60 * 1000).toISOString(),
         })),
-        events: Array.from({ length: 15 }).map((_, i) => ({
+        events: Array.from({ length: 15 }).map(() => ({
           type: 'PushEvent',
           created_at: new Date(Date.now() - range(0, 10) * 24 * 60 * 60 * 1000).toISOString(),
           payload: { commits: Array.from({ length: range(1, 4) }) },
@@ -435,7 +434,7 @@ export function generateMockStats(platform, username) {
         websiteUrl: `https://${username}.dev`,
         followersCount: range(50, 4500),
         postsCount: range(2, 28),
-        articles: Array.from({ length: 3 }).map((_, i) => ({
+        articles: Array.from({ length: 3 }).map(() => ({
           title: choice([
             'Mastering React Server Components',
             'Why I Switched from Redux to Zustand',

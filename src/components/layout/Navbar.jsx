@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom'
-import { Bell, Search } from 'lucide-react'
+import { Bell } from 'lucide-react'
 import useAuthStore from '@/store/authStore'
 
 const PAGE_TITLES = {

@@ -47,7 +47,7 @@ export default function Sidebar() {
   return (
     <motion.aside
       initial={false}
-      animate={{ width: collapsed ? 64 : 220 }}
+      animate={{ width: collapsed ? 64 : 240 }}
       transition={{ duration: 0.2, ease: 'easeInOut' }}
       className="hidden md:flex flex-col h-screen bg-surface border-r border-border fixed left-0 top-0 z-30 overflow-hidden"
     >

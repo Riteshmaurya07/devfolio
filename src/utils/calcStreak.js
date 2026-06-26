@@ -45,9 +45,13 @@ export function calcGitHubStreak(contributions = []) {
   let streak = 0
   const cursor = new Date(startDate)
 
-  while (true) {
+  let checking = true
+  while (checking) {
     const dateStr = cursor.toISOString().split('T')[0]
-    if (map[dateStr] === undefined || map[dateStr] === 0) break
+    if (map[dateStr] === undefined || map[dateStr] === 0) {
+      checking = false
+      break
+    }
     streak++
     cursor.setDate(cursor.getDate() - 1)
   }
