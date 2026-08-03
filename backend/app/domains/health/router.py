@@ -1,0 +1,12 @@
+from fastapi import APIRouter
+from pydantic import BaseModel
+
+router = APIRouter(prefix="/health", tags=["health"])
+
+class HealthResponse(BaseModel):
+    status: str
+    message: str
+
+@router.get("", response_model=HealthResponse)
+async def health_check():
+    return HealthResponse(status="ok", message="Devfolio OS Backend is healthy.")
