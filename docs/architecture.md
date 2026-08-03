@@ -47,7 +47,12 @@ erDiagram
     USERS ||--o{ AI_CHATS : "has"
     USERS ||--o{ FRIEND_REQUESTS : "sends/receives"
     USERS ||--o{ NOTIFICATIONS : "receives"
+    USERS ||--|| USER_METRICS : "has"
     CONNECTED_ACCOUNTS ||--o{ PLATFORM_STATS_HISTORY : "tracks"
+    AI_CHATS ||--o{ AI_MESSAGES : "contains"
+    RESUMES ||--o{ RESUME_VERSIONS : "has"
+    ROADMAPS ||--o{ ROADMAP_WEEKS : "has"
+    ROADMAP_WEEKS ||--o{ ROADMAP_TASKS : "contains"
 
     USERS {
         uuid id PK
@@ -56,14 +61,24 @@ erDiagram
         string hashed_password "Nullable for OAuth only users"
         string auth_provider "local, github, etc."
         string avatar_url
-        jsonb preferences "Sync preferences (live vs background)"
+        boolean is_email_verified
+        jsonb preferences "Sync preferences"
         datetime created_at
+    }
+
+    USER_METRICS {
+        uuid id PK
+        uuid user_id FK
+        int developer_score
+        int total_problems_solved
+        int current_streak
+        datetime updated_at
     }
 
     NOTIFICATIONS {
         uuid id PK
         uuid user_id FK
-        string notification_type "time_based or event_based"
+        string notification_type
         string title
         string message
         boolean is_read
@@ -75,49 +90,69 @@ erDiagram
         uuid requester_id FK
         uuid addressee_id FK
         string status "pending, accepted, rejected"
-        datetime created_at
-        datetime updated_at
     }
 
     CONNECTED_ACCOUNTS {
         uuid id PK
         uuid user_id FK
-        string platform_name "github, leetcode, etc."
+        string platform_name
         string platform_username
-        datetime last_synced_at
     }
 
     PLATFORM_STATS_HISTORY {
         uuid id PK
         uuid account_id FK
-        jsonb raw_data "Full JSON response from platform"
-        jsonb parsed_metrics "Derived scores and stats"
-        datetime recorded_at "For time-series analytics"
+        jsonb raw_data
+        jsonb parsed_metrics
+        datetime recorded_at
     }
 
     AI_CHATS {
         uuid id PK
         uuid user_id FK
         string title
-        string topic "general, interview, roadmap"
-        jsonb messages "Array of chat history"
+        string topic
+    }
+
+    AI_MESSAGES {
+        uuid id PK
+        uuid chat_id FK
+        string role "user, ai, system"
+        text content
         datetime created_at
-        datetime updated_at
     }
 
     RESUMES {
         uuid id PK
         uuid user_id FK
         string title
-        jsonb resume_data "Form data"
-        datetime updated_at
+    }
+
+    RESUME_VERSIONS {
+        uuid id PK
+        uuid resume_id FK
+        jsonb resume_data
+        datetime created_at
     }
 
     ROADMAPS {
         uuid id PK
         uuid user_id FK
         string goal
-        jsonb roadmap_data "Week-by-week plan"
+        boolean is_completed
+    }
+
+    ROADMAP_WEEKS {
+        uuid id PK
+        uuid roadmap_id FK
+        int week_number
+        string title
+    }
+
+    ROADMAP_TASKS {
+        uuid id PK
+        uuid week_id FK
+        string description
         boolean is_completed
     }
 ```
