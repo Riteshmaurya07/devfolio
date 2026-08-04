@@ -20,7 +20,8 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 from app.core.database import Base
 # Import all models here so Alembic can discover them
-# from app.domains.users.models import User
+from app.domains.users.models import User
+from app.domains.platforms.models import ConnectedAccount, PlatformStatsHistory
 target_metadata = Base.metadata
 
 from app.core.config import settings
