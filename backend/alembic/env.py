@@ -26,6 +26,8 @@ from app.domains.leaderboard.models import UserMetrics
 from app.domains.social.models import FriendRequest
 from app.domains.notifications.models import Notification
 from app.domains.resumes.models import Resume, ResumeVersion
+from app.domains.ai.models import AIChat, AIMessage
+from app.domains.roadmaps.models import Roadmap, RoadmapWeek, RoadmapTask
 target_metadata = Base.metadata
 
 from app.core.config import settings

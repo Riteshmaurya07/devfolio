@@ -63,6 +63,23 @@ def get_resume_repo(db: AsyncSession = Depends(get_db)) -> ResumeRepository:
 def get_resume_service(repo: ResumeRepository = Depends(get_resume_repo)) -> ResumeService:
     return ResumeService(repo)
 
+from app.domains.ai.repository import AIChatRepository
+from app.domains.ai.service import AIService
+from app.domains.roadmaps.repository import RoadmapRepository
+from app.domains.roadmaps.service import RoadmapService
+
+def get_ai_repo(db: AsyncSession = Depends(get_db)) -> AIChatRepository:
+    return AIChatRepository(db)
+
+def get_ai_service(repo: AIChatRepository = Depends(get_ai_repo)) -> AIService:
+    return AIService(repo)
+
+def get_roadmap_repo(db: AsyncSession = Depends(get_db)) -> RoadmapRepository:
+    return RoadmapRepository(db)
+
+def get_roadmap_service(repo: RoadmapRepository = Depends(get_roadmap_repo)) -> RoadmapService:
+    return RoadmapService(repo)
+
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     user_repo: UserRepository = Depends(get_user_repo)
