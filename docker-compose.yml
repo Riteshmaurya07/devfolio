@@ -3,61 +3,180 @@ version: '3.8'
 services:
   db:
     image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: devfolio_user
-      POSTGRES_PASSWORD: devfolio_password
-      POSTGRES_DB: devfolio_db
-    ports:
-      - "5432:5432"
+    container_name: devfolio-db${ENV_SUFFIX:-}
+    shm_size: 128mb
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-devfolio_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-devfolio_password}
+      - POSTGRES_DB=${POSTGRES_DB:-devfolio_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U devfolio_user -d devfolio_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-devfolio_user} -d ${POSTGRES_DB:-devfolio_db}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    stop_grace_period: 30s
 
   redis:
     image: redis:7-alpine
+    container_name: devfolio-redis${ENV_SUFFIX:-}
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    command: redis-server --maxmemory 200mb --maxmemory-policy allkeys-lru
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: devfolio-backend${ENV_SUFFIX:-}
+    shm_size: 256mb
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+        reservations:
+          cpus: "1"
+          memory: 1G
     volumes:
       - ./backend:/app
+      - app_logs:/var/log/app
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://devfolio_user:devfolio_password@db:5432/devfolio_db
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://devfolio_user:devfolio_password@db:5432/devfolio_db}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: sh -c "mkdir -p /var/log/app && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload 2>&1 | tee -a /var/log/app/backend.log"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: devfolio-celery-worker${ENV_SUFFIX:-}
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    volumes:
+      - ./backend:/app
+      - app_logs:/var/log/app
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://devfolio_user:devfolio_password@db:5432/devfolio_db}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: sh -c "mkdir -p /var/log/app && celery -A app.core.celery_app worker --loglevel=info --concurrency=2 2>&1 | tee -a /var/log/app/celery-worker.log"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.core.celery_app inspect ping 2>&1 | grep -q 'OK' || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: devfolio-celery-beat${ENV_SUFFIX:-}
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    volumes:
+      - ./backend:/app
+      - app_logs:/var/log/app
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://devfolio_user:devfolio_password@db:5432/devfolio_db}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      - celery-worker
+    command: sh -c "mkdir -p /var/log/app && celery -A app.core.celery_app beat --loglevel=info 2>&1 | tee -a /var/log/app/celery-beat.log"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "grep -q celery /proc/1/cmdline"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: devfolio-frontend${ENV_SUFFIX:-}
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+        reservations:
+          cpus: "1"
+          memory: 1G
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - app_logs:/var/log/app
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api}
     depends_on:
       - backend
+    command: sh -c "npm run dev 2>&1 | tee -a /var/log/app/frontend.log"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   postgres_data:
+  app_logs:
