@@ -13,14 +13,16 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
-    # Example Beat Schedule (can be configured later)
-    # beat_schedule={
-    #     'daily-sync': {
-    #         'task': 'app.domains.platforms.tasks.sync_all_accounts',
-    #         'schedule': 86400.0,
-    #     }
-    # }
+    beat_schedule={
+        'daily-reminders': {
+            'task': 'app.domains.notifications.tasks.send_daily_reminders',
+            'schedule': 86400.0, # Run once a day
+        }
+    }
 )
 
-# Optional: Load task modules here or let Celery discover them when running worker
-celery_app.autodiscover_tasks(['app.domains.platforms.tasks'])
+# Load task modules so Celery Beat and Workers can discover them
+celery_app.autodiscover_tasks([
+    'app.domains.platforms.tasks',
+    'app.domains.notifications.tasks'
+])

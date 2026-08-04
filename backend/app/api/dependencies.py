@@ -25,6 +25,44 @@ def get_platform_repo(db: AsyncSession = Depends(get_db)) -> PlatformRepository:
 def get_platform_service(repo: PlatformRepository = Depends(get_platform_repo)) -> PlatformService:
     return PlatformService(repo)
 
+from app.domains.leaderboard.repository import LeaderboardRepository
+from app.domains.leaderboard.service import LeaderboardService
+
+def get_leaderboard_repo(db: AsyncSession = Depends(get_db)) -> LeaderboardRepository:
+    return LeaderboardRepository(db)
+
+def get_leaderboard_service(repo: LeaderboardRepository = Depends(get_leaderboard_repo)) -> LeaderboardService:
+    return LeaderboardService(repo)
+
+from app.domains.notifications.repository import NotificationRepository
+from app.domains.notifications.service import NotificationService
+from app.domains.social.repository import FriendRepository
+from app.domains.social.service import FriendService
+
+def get_notification_repo(db: AsyncSession = Depends(get_db)) -> NotificationRepository:
+    return NotificationRepository(db)
+
+def get_notification_service(repo: NotificationRepository = Depends(get_notification_repo)) -> NotificationService:
+    return NotificationService(repo)
+
+def get_friend_repo(db: AsyncSession = Depends(get_db)) -> FriendRepository:
+    return FriendRepository(db)
+
+def get_friend_service(
+    friend_repo: FriendRepository = Depends(get_friend_repo),
+    notif_repo: NotificationRepository = Depends(get_notification_repo)
+) -> FriendService:
+    return FriendService(friend_repo, notif_repo)
+
+from app.domains.resumes.repository import ResumeRepository
+from app.domains.resumes.service import ResumeService
+
+def get_resume_repo(db: AsyncSession = Depends(get_db)) -> ResumeRepository:
+    return ResumeRepository(db)
+
+def get_resume_service(repo: ResumeRepository = Depends(get_resume_repo)) -> ResumeService:
+    return ResumeService(repo)
+
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     user_repo: UserRepository = Depends(get_user_repo)

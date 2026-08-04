@@ -31,7 +31,31 @@ async def _sync_account_async(account_id: str):
                 raw_data=raw_data,
                 parsed_metrics=parsed_metrics
             )
-            # In a full implementation, we'd also trigger an update to USER_METRICS here.
+            
+            # Update USER_METRICS
+            from app.domains.leaderboard.models import UserMetrics
+            from sqlalchemy.future import select
+            from sqlalchemy.dialects.postgresql import insert
+            
+            # Simple aggregation logic (example)
+            # In a real app, you would sum across all connected accounts for this user
+            new_score = parsed_metrics.get("total_problems_solved", 0) * 10
+            
+            stmt = insert(UserMetrics).values(
+                user_id=account.user_id,
+                developer_score=new_score,
+                total_problems_solved=parsed_metrics.get("total_problems_solved", 0),
+                current_streak=0
+            ).on_conflict_do_update(
+                index_elements=['user_id'],
+                set_={
+                    'developer_score': new_score,
+                    'total_problems_solved': parsed_metrics.get("total_problems_solved", 0)
+                }
+            )
+            await db.execute(stmt)
+            await db.commit()
+            
         except Exception as e:
             # Handle logging and retry logic
             raise e

@@ -22,6 +22,10 @@ from app.core.database import Base
 # Import all models here so Alembic can discover them
 from app.domains.users.models import User
 from app.domains.platforms.models import ConnectedAccount, PlatformStatsHistory
+from app.domains.leaderboard.models import UserMetrics
+from app.domains.social.models import FriendRequest
+from app.domains.notifications.models import Notification
+from app.domains.resumes.models import Resume, ResumeVersion
 target_metadata = Base.metadata
 
 from app.core.config import settings
