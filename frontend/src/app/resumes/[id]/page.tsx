@@ -59,6 +59,21 @@ export default function ResumeEditorPage() {
     return () => clearTimeout(timer);
   }, [resume]);
 
+  const handleSave = async () => {
+    if (!resume) return;
+    setSaveStatus('saving');
+    try {
+      await api.put(`/resumes/${resume.id}`, {
+        title: resume.title,
+        resume_data: resume.resume_data
+      });
+      setSaveStatus('saved');
+    } catch (err) {
+      toast.error('Save failed');
+      setSaveStatus('unsaved');
+    }
+  };
+
   const handleBasicsChange = (field: string, value: string) => {
     if (!resume) return;
     setResume({
@@ -151,9 +166,18 @@ export default function ResumeEditorPage() {
             />
           </div>
           <div className="flex items-center gap-2 text-sm font-medium">
-            {saveStatus === 'saving' && <span className="text-gray-500">Saving...</span>}
-            {saveStatus === 'saved' && <span className="text-green-600 dark:text-green-400">All changes saved</span>}
-            {saveStatus === 'unsaved' && <span className="text-yellow-600 dark:text-yellow-400">Unsaved changes...</span>}
+            <button 
+              onClick={handleSave}
+              disabled={saveStatus === 'saved' || saveStatus === 'saving'}
+              className={`px-4 py-2 rounded-lg font-medium transition text-white ${
+                saveStatus === 'saved' ? 'bg-green-600 opacity-70 cursor-not-allowed' :
+                saveStatus === 'saving' ? 'bg-indigo-600 opacity-70 cursor-not-allowed' :
+                'bg-indigo-600 hover:bg-indigo-700'
+              }`}
+            >
+              {saveStatus === 'saving' ? 'Saving...' : 
+               saveStatus === 'saved' ? 'Saved' : 'Save Changes'}
+            </button>
           </div>
         </div>
 
