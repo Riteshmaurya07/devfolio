@@ -26,17 +26,21 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           </button>
         </div>
         <nav className="p-4 space-y-2">
-          <Link href="/dashboard" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+          <Link href="/dashboard" onClick={() => sidebarOpen && toggleSidebar()} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
             <LayoutDashboard size={20} />
             <span>Dashboard</span>
           </Link>
-          <Link href="/profile" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+          <Link href="/resumes" onClick={() => sidebarOpen && toggleSidebar()} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
             <User size={20} />
-            <span>Profile</span>
+            <span>Resumes</span>
           </Link>
-          <Link href="/settings" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+          <Link href="/roadmaps" onClick={() => sidebarOpen && toggleSidebar()} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
             <Settings size={20} />
-            <span>Settings</span>
+            <span>Roadmaps</span>
+          </Link>
+          <Link href="/ai" onClick={() => sidebarOpen && toggleSidebar()} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+            <Settings size={20} />
+            <span>AI Advisor</span>
           </Link>
         </nav>
         <div className="absolute bottom-0 w-full p-4 border-t dark:border-gray-700">

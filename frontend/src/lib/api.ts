@@ -26,7 +26,14 @@ api.interceptors.response.use(
           {},
           { withCredentials: true }
         );
-        useAuthStore.getState().login(useAuthStore.getState().user!, data.access_token);
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) {
+          useAuthStore.getState().login(currentUser, data.access_token);
+        } else {
+          useAuthStore.getState().logout();
+          window.location.href = '/login';
+          return Promise.reject(new Error('No user found during refresh'));
+        }
         api.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`;
         return api(originalRequest);
       } catch (refreshError) {

@@ -1,11 +1,6 @@
 import { create } from 'zustand';
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  avatar_url?: string;
-}
+import { persist } from 'zustand/middleware';
+import { User } from '@/types';
 
 interface AuthState {
   user: User | null;
@@ -15,10 +10,22 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  token: null,
-  isAuthenticated: false,
-  login: (user, token) => set({ user, token, isAuthenticated: true }),
-  logout: () => set({ user: null, token: null, isAuthenticated: false }),
-}));
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      login: (user, token) => set({ user, token, isAuthenticated: true }),
+      logout: () => {
+        if (typeof document !== 'undefined') {
+          document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        }
+        set({ user: null, token: null, isAuthenticated: false });
+      },
+    }),
+    {
+      name: 'auth-storage', // name of the item in the storage (must be unique)
+    }
+  )
+);
