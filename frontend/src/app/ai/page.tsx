@@ -6,6 +6,8 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { Chat, Message } from '@/types';
 import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 export default function AIChatPage() {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -70,18 +72,14 @@ export default function AIChatPage() {
       // Replace temp message and add AI response
       setMessages((prev) => {
         const filtered = prev.filter(m => m.id !== tempUserMsg.id);
-        // The backend might return just the new message or the whole updated list.
-        // Assuming it returns the AI's message:
         if (res.data && res.data.content) {
              return [...filtered, { id: res.data.id || Date.now(), role: 'user', content: currentInput }, { id: Date.now() + 1, role: 'assistant', content: res.data.content }];
         }
-        // If it doesn't return exactly what we expect, just refetch
         fetchMessages(activeChat);
         return prev;
       });
     } catch (err) {
       toast.error('Failed to send message');
-      // Remove temp message on error
       setMessages((prev) => prev.filter((m) => m.id !== tempUserMsg.id));
       setInput(currentInput);
     } finally {
@@ -115,7 +113,7 @@ export default function AIChatPage() {
         </div>
 
         {/* Chat Window */}
-        <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 flex flex-col h-[500px] md:h-auto">
+        <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 flex flex-col h-[500px] md:h-auto overflow-hidden">
           {activeChat ? (
             <>
               <div className="flex-1 p-4 overflow-y-auto space-y-4">
@@ -124,12 +122,35 @@ export default function AIChatPage() {
                 )}
                 {messages.map(msg => (
                   <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] md:max-w-[70%] p-3 rounded-lg ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none'}`}>
+                    <div className={`max-w-[85%] md:max-w-[75%] p-3 rounded-lg ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none overflow-hidden'}`}>
                       {msg.role === 'user' ? (
                         msg.content
                       ) : (
                         <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          <ReactMarkdown
+                            components={{
+                              code({node, inline, className, children, ...props}: any) {
+                                const match = /language-(\w+)/.exec(className || '');
+                                return !inline && match ? (
+                                  <SyntaxHighlighter
+                                    style={vscDarkPlus as any}
+                                    language={match[1]}
+                                    PreTag="div"
+                                    className="rounded-md !my-2"
+                                    {...props}
+                                  >
+                                    {String(children).replace(/\n$/, '')}
+                                  </SyntaxHighlighter>
+                                ) : (
+                                  <code className={`${className} bg-gray-200 dark:bg-gray-800 px-1 py-0.5 rounded text-sm`} {...props}>
+                                    {children}
+                                  </code>
+                                )
+                              }
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
                         </div>
                       )}
                     </div>
@@ -146,7 +167,7 @@ export default function AIChatPage() {
                 )}
                 <div ref={messagesEndRef} />
               </div>
-              <form onSubmit={sendMessage} className="p-4 border-t dark:border-gray-700 flex gap-2 shrink-0">
+              <form onSubmit={sendMessage} className="p-4 border-t dark:border-gray-700 flex gap-2 shrink-0 bg-white dark:bg-gray-800">
                 <input 
                   type="text" 
                   value={input} 
