@@ -221,6 +221,7 @@ def upgrade() -> None:
     sa.Column('order_index', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['github_repo_id'], ['repositories.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['portfolio_id'], ['portfolio_configs.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('portfolio_id', 'github_repo_id', name='uq_portfolio_github_repo')
     )
     op.drop_constraint('resume_versions_resume_id_fkey', 'resume_versions', type_='foreignkey')

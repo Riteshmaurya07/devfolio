@@ -45,7 +45,7 @@ from app.domains.admin.seed_admin import seed_admin_user
 async def on_startup():
     try:
         await run_roadmap_seed()
-        seed_admin_user()
+        await seed_admin_user()
     except Exception as e:
         print(f"Startup seed error: {e}")
 
