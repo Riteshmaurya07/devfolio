@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from uuid import UUID
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 class ResumeCreate(BaseModel):
     title: str
@@ -25,7 +25,7 @@ class ResumeResponse(BaseModel):
     title: str
     created_at: datetime
     updated_at: datetime
-    latest_version: ResumeVersionResponse
+    latest_version: Optional[ResumeVersionResponse] = None
 
     class Config:
         from_attributes = True
