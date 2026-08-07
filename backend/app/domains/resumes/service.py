@@ -36,11 +36,32 @@ class ResumeService:
                 })
         return response
 
-    async def update_resume(self, user_id: str, resume_id: str, resume_data: dict):
+    async def get_resume(self, user_id: str, resume_id: str):
+        resume = await self.repo.get_resume_by_id(resume_id)
+        if not resume or str(resume.user_id) != user_id:
+            raise HTTPException(status_code=404, detail="Resume not found")
+        
+        # Sort versions to easily get the latest if needed
+        sorted_versions = sorted(resume.versions, key=lambda v: v.created_at, reverse=True)
+        latest = sorted_versions[0] if sorted_versions else None
+        
+        return {
+            "id": resume.id,
+            "title": resume.title,
+            "created_at": resume.created_at,
+            "updated_at": resume.updated_at,
+            "latest_version": latest
+        }
+
+    async def update_resume(self, user_id: str, resume_id: str, title: str, resume_data: dict):
         resume = await self.repo.get_resume_by_id(resume_id)
         if not resume or str(resume.user_id) != user_id:
             raise HTTPException(status_code=404, detail="Resume not found")
             
+        if resume.title != title:
+            await self.repo.update_resume_title(resume_id, title)
+            resume.title = title
+
         version = await self.repo.add_version(resume_id, resume_data)
         return {
             "id": resume.id,

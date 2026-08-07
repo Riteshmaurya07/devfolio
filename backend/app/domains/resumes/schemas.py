@@ -7,6 +7,10 @@ class ResumeCreate(BaseModel):
     title: str
     resume_data: Dict[str, Any]
 
+class ResumeUpdate(BaseModel):
+    title: str
+    resume_data: Dict[str, Any]
+
 class ResumeVersionResponse(BaseModel):
     id: UUID
     resume_id: UUID

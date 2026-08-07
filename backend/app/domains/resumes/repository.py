@@ -41,3 +41,11 @@ class ResumeRepository:
         )
         result = await self.db.execute(stmt)
         return result.scalars().first()
+
+    async def update_resume_title(self, resume_id: str, new_title: str) -> Optional[Resume]:
+        resume = await self.get_resume_by_id(resume_id)
+        if resume:
+            resume.title = new_title
+            await self.db.commit()
+            await self.db.refresh(resume)
+        return resume

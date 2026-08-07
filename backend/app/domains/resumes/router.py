@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from typing import List, Dict, Any
 from pydantic import BaseModel
-from app.domains.resumes.schemas import ResumeCreate, ResumeResponse
+from app.domains.resumes.schemas import ResumeCreate, ResumeResponse, ResumeUpdate
 from app.domains.resumes.service import ResumeService
 from app.api.dependencies import get_resume_service, get_current_user
 from app.domains.users.models import User
@@ -26,11 +26,19 @@ async def list_resumes(
 ):
     return await service.get_user_resumes(str(current_user.id))
 
-@router.post("/{resume_id}/versions", response_model=ResumeResponse)
-async def update_resume_version(
+@router.get("/{resume_id}", response_model=ResumeResponse)
+async def get_resume(
     resume_id: str,
-    req: UpdateResumeRequest,
     current_user: User = Depends(get_current_user),
     service: ResumeService = Depends(get_resume_service)
 ):
-    return await service.update_resume(str(current_user.id), resume_id, req.resume_data)
+    return await service.get_resume(str(current_user.id), resume_id)
+
+@router.put("/{resume_id}", response_model=ResumeResponse)
+async def update_resume(
+    resume_id: str,
+    req: ResumeUpdate,
+    current_user: User = Depends(get_current_user),
+    service: ResumeService = Depends(get_resume_service)
+):
+    return await service.update_resume(str(current_user.id), resume_id, req.title, req.resume_data)
