@@ -98,7 +98,21 @@ async def github_callback(code: str, auth_service: AuthService = Depends(get_aut
             data={"sub": str(user.id), "email": user.email}
         )
         
-        return RedirectResponse(f"{settings.FRONTEND_URL}/auth/github/callback?token={jwt_token}")
+        from datetime import timedelta
+        refresh_token = auth_service.create_access_token(
+            data={"sub": str(user.id), "type": "refresh"},
+            expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        )
+        
+        response = RedirectResponse(f"{settings.FRONTEND_URL}/auth/github/callback?token={jwt_token}")
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="lax"
+        )
+        return response
 
 @router.post("/refresh")
 async def refresh_token(
