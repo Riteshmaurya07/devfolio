@@ -100,6 +100,11 @@ Managing the application lifecycle is easy with the included utility script:
 | `bash start_local.sh db` | Drop into an interactive PostgreSQL `psql` shell. |
 | `bash start_local.sh migrate` | Manually auto-generate and apply Alembic migrations. |
 
+### Database Migrations (Alembic Workflow)
+To modify database models or apply migrations directly in the backend container:
+1. **Generate a migration:** `docker compose exec backend alembic revision --autogenerate -m "description"`
+2. **Apply migrations:** `docker compose exec backend alembic upgrade head`
+
 ## Architecture Overview
 
 Devfolio OS uses a Domain-Driven Design (DDD) approach in the backend for strict modularity, organized around the following bounded contexts:

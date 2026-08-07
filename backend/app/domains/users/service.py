@@ -1,38 +1,52 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List, Tuple
+from uuid import UUID
 import jwt
-from passlib.context import CryptContext
-from fastapi import HTTPException, status
+import bcrypt
 from app.domains.users.repository import UserRepository
-from app.domains.users.schemas import UserCreate, LoginRequest
+from app.domains.users.schemas import UserCreate, LoginRequest, UserResponse
+from app.domains.users.models import User
 from app.core.config import settings
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.core.exceptions import ConflictError, UnauthorizedError, NotFoundError
+from app.utils.pagination import PageParams, PaginatedResponse
 
 class AuthService:
     def __init__(self, user_repo: UserRepository):
         self.user_repo = user_repo
 
-    def verify_password(self, plain_password, hashed_password):
-        return pwd_context.verify(plain_password, hashed_password)
+    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
-    def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None):
+    def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None) -> str:
         to_encode = data.copy()
         expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
         to_encode.update({"exp": expire})
         return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
-    async def register_user(self, user_in: UserCreate):
+    async def register_user(self, user_in: UserCreate) -> User:
         if await self.user_repo.get_by_email(user_in.email):
-            raise HTTPException(status_code=400, detail="Email already registered")
+            raise ConflictError(message="Email already registered")
         if await self.user_repo.get_by_username(user_in.username):
-            raise HTTPException(status_code=400, detail="Username already taken")
+            raise ConflictError(message="Username already taken")
         return await self.user_repo.create(user_in)
 
-    async def authenticate_user(self, login_data: LoginRequest):
+    async def authenticate_user(self, login_data: LoginRequest) -> User:
         user = await self.user_repo.get_by_email(login_data.email)
         if not user or not user.hashed_password:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+            raise UnauthorizedError(message="Invalid credentials")
+        if user.is_suspended:
+            raise UnauthorizedError(message="Account suspended. Access denied.")
         if not self.verify_password(login_data.password, user.hashed_password):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+            raise UnauthorizedError(message="Invalid credentials")
         return user
+
+    async def get_user_by_id(self, user_id: UUID) -> User:
+        user = await self.user_repo.get_by_id(user_id)
+        if not user:
+            raise NotFoundError(message="User not found")
+        return user
+
+    async def list_users(self, params: PageParams) -> PaginatedResponse[UserResponse]:
+        items, total = await self.user_repo.list_paginated(params)
+        user_responses = [UserResponse.model_validate(u) for u in items]
+        return PaginatedResponse.create(items=user_responses, total=total, params=params)

@@ -18,7 +18,7 @@ This document defines the complete architectural overhaul required to transition
 ```mermaid
 graph TD
     Client[Web Browser] -->|HTTP / WebSockets| NextJS[Next.js Frontend :3000]
-    NextJS -->|REST API / JSON| FastAPI[FastAPI Backend :8000]
+    NextJS -->|REST API / JSON| FastAPI[FastAPI Backend :8000 (CORS Enabled)]
     
     FastAPI -->|SQLAlchemy / asyncpg| Postgres[(PostgreSQL :5432)]
     
@@ -41,24 +41,6 @@ The schema supports multi-user analytics, background syncing, social features, a
 
 ```mermaid
 erDiagram
-    USERS ||--o{ CONNECTED_ACCOUNTS : "owns"
-    USERS ||--o{ RESUMES : "creates"
-    USERS ||--o{ ROADMAPS : "generates"
-    USERS ||--o{ AI_CHATS : "has"
-    USERS ||--o{ FRIEND_REQUESTS : "sends/receives"
-    USERS ||--o{ NOTIFICATIONS : "receives"
-    USERS ||--|| USER_METRICS : "has"
-    CONNECTED_ACCOUNTS ||--o{ PLATFORM_STATS_HISTORY : "tracks"
-    AI_CHATS ||--o{ AI_MESSAGES : "contains"
-    RESUMES ||--o{ RESUME_VERSIONS : "has"
-    ROADMAPS ||--o{ ROADMAP_WEEKS : "has"
-    ROADMAP_WEEKS ||--o{ ROADMAP_TASKS : "contains"
-
-    USERS {
-        uuid id PK
-        string username UK
-        string email UK
-        string hashed_password "Nullable for OAuth only users"
         string auth_provider "local, github, etc."
         string avatar_url
         boolean is_email_verified
@@ -187,6 +169,24 @@ The system leverages **Celery and Redis** to decouple notifications from the mai
     *   `GET /api/platforms/analytics`
 *   **AI Advisor:**
     *   `GET /api/ai/chats` & `POST /api/ai/chats` & `POST /api/ai/chats/{chat_id}/message`
+*   **Feed & Social Platform (Module 10):**
+    *   `GET /api/feed` - Composite-cursor paginated feed (own + followed users' posts)
+    *   `POST /api/feed/posts` - Create post (rate-limited: 10/hour, content max 5000 chars)
+    *   `GET /api/feed/posts/{id}` - Post detail with comments
+    *   `POST /api/feed/posts/{id}/comments` - Add comment (rate-limited: 30/min, max 2000 chars)
+    *   `POST /api/feed/posts/{id}/like` - Toggle like (idempotent)
+    *   `POST /api/feed/posts/{id}/bookmark` - Toggle bookmark (idempotent)
+    *   `GET /api/feed/trending` - Trending projects (Celery Beat scored)
+*   **Admin Panel (Module 13):**
+    *   `POST /api/reports` - User report ingestion (flag post, comment, or user)
+    *   `GET /api/admin/users` - Admin user management table (search, pagination, role badges)
+    *   `PUT /api/admin/users/{id}/suspend` - Toggle user suspension interlock (protected against self/admin suspension)
+    *   `GET /api/admin/analytics` - Platform-wide aggregated metrics
+    *   `PUT /api/admin/moderation/posts/{id}/soft-delete` - Soft-delete post with evidence preservation
+    *   `GET /api/admin/reports` & `PUT /api/admin/reports/{id}/status` - Moderation queue resolution
+    *   `GET /api/admin/audit-logs` - Immutable administrative audit log timeline
+*   **Schema Extensions:**
+    *   `analytics_events.entity_id` (UUID, nullable) — ties project_view events to specific projects for trending calculation
 
 ---
 

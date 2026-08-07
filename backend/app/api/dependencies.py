@@ -8,8 +8,8 @@ from app.domains.users.repository import UserRepository
 from app.domains.users.service import AuthService
 from app.domains.users.models import User
 
-from app.domains.platforms.repository import PlatformRepository
-from app.domains.platforms.service import PlatformService
+from app.domains.platforms.repository import CodingProfileRepository
+from app.domains.platforms.service import CodingDashboardService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/users/login")
 
@@ -19,11 +19,11 @@ def get_user_repo(db: AsyncSession = Depends(get_db)) -> UserRepository:
 def get_auth_service(user_repo: UserRepository = Depends(get_user_repo)) -> AuthService:
     return AuthService(user_repo)
 
-def get_platform_repo(db: AsyncSession = Depends(get_db)) -> PlatformRepository:
-    return PlatformRepository(db)
+def get_platform_repo(db: AsyncSession = Depends(get_db)) -> CodingProfileRepository:
+    return CodingProfileRepository(db)
 
-def get_platform_service(repo: PlatformRepository = Depends(get_platform_repo)) -> PlatformService:
-    return PlatformService(repo)
+def get_platform_service(repo: CodingProfileRepository = Depends(get_platform_repo)) -> CodingDashboardService:
+    return CodingDashboardService(repo)
 
 from app.domains.leaderboard.repository import LeaderboardRepository
 from app.domains.leaderboard.service import LeaderboardService
@@ -63,15 +63,15 @@ def get_resume_repo(db: AsyncSession = Depends(get_db)) -> ResumeRepository:
 def get_resume_service(repo: ResumeRepository = Depends(get_resume_repo)) -> ResumeService:
     return ResumeService(repo)
 
-from app.domains.ai.repository import AIChatRepository
+from app.domains.ai.repository import AIRepository
 from app.domains.ai.service import AIService
 from app.domains.roadmaps.repository import RoadmapRepository
 from app.domains.roadmaps.service import RoadmapService
 
-def get_ai_repo(db: AsyncSession = Depends(get_db)) -> AIChatRepository:
-    return AIChatRepository(db)
+def get_ai_repo(db: AsyncSession = Depends(get_db)) -> AIRepository:
+    return AIRepository(db)
 
-def get_ai_service(repo: AIChatRepository = Depends(get_ai_repo)) -> AIService:
+def get_ai_service(repo: AIRepository = Depends(get_ai_repo)) -> AIService:
     return AIService(repo)
 
 def get_roadmap_repo(db: AsyncSession = Depends(get_db)) -> RoadmapRepository:
@@ -107,4 +107,26 @@ async def get_current_user(
     user = await user_repo.get_by_email(email=user_email)
     if user is None:
         raise credentials_exception
+
+    # Immediate Suspension Interlock: reject active JWTs for suspended accounts
+    if user.is_suspended:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account suspended. Access denied."
+        )
+
     return user
+
+async def get_current_admin_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """
+    Admin RBAC dependency gate. Enforces 403 Forbidden for non-admin accounts.
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required."
+        )
+    return current_user
+

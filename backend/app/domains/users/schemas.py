@@ -1,5 +1,5 @@
-from typing import Optional, Dict, Any
-from pydantic import BaseModel, EmailStr, Field
+from typing import Optional, Dict, Any, List
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from uuid import UUID
 from datetime import datetime
 
@@ -15,11 +15,10 @@ class UserResponse(UserBase):
     id: UUID
     auth_provider: str
     is_email_verified: bool
-    preferences: Dict[str, Any]
+    preferences: Optional[Dict[str, Any]] = {}
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class TokenResponse(BaseModel):
     access_token: str

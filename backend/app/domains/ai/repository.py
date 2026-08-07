@@ -1,41 +1,55 @@
 from typing import Optional, List
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
-from app.domains.ai.models import AIChat, AIMessage
+from app.domains.ai.models import AIConversation, AIMessage
 
-class AIChatRepository:
+class AIRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_chat(self, user_id: str, title: str, topic: str) -> AIChat:
-        chat = AIChat(user_id=user_id, title=title, topic=topic)
-        self.db.add(chat)
-        await self.db.commit()
-        await self.db.refresh(chat)
-        return chat
+    async def get_all_conversations(self, profile_id: UUID) -> List[AIConversation]:
+        res = await self.db.execute(
+            select(AIConversation)
+            .where(AIConversation.profile_id == profile_id)
+            .order_by(AIConversation.updated_at.desc())
+        )
+        return res.scalars().all()
 
-    async def add_message(self, chat_id: str, role: str, content: str) -> AIMessage:
-        msg = AIMessage(chat_id=chat_id, role=role, content=content)
+    async def get_conversation_by_id(self, conversation_id: UUID) -> Optional[AIConversation]:
+        res = await self.db.execute(
+            select(AIConversation).where(AIConversation.id == conversation_id)
+        )
+        return res.scalars().first()
+
+    async def create_conversation(self, profile_id: UUID, title: str, mode: str, context_snapshot: dict) -> AIConversation:
+        conv = AIConversation(
+            profile_id=profile_id,
+            title=title,
+            mode=mode,
+            context_snapshot=context_snapshot
+        )
+        self.db.add(conv)
+        await self.db.commit()
+        await self.db.refresh(conv)
+        return conv
+
+    async def get_messages(self, conversation_id: UUID) -> List[AIMessage]:
+        res = await self.db.execute(
+            select(AIMessage)
+            .where(AIMessage.conversation_id == conversation_id)
+            .order_by(AIMessage.created_at.asc())
+        )
+        return res.scalars().all()
+
+    async def add_message(self, conversation_id: UUID, role: str, content: str, status: str = "complete") -> AIMessage:
+        msg = AIMessage(
+            conversation_id=conversation_id,
+            role=role,
+            content=content,
+            status=status
+        )
         self.db.add(msg)
         await self.db.commit()
         await self.db.refresh(msg)
         return msg
-
-    async def get_chat(self, chat_id: str) -> Optional[AIChat]:
-        stmt = (
-            select(AIChat)
-            .where(AIChat.id == chat_id)
-            .options(selectinload(AIChat.messages))
-        )
-        result = await self.db.execute(stmt)
-        return result.scalars().first()
-
-    async def get_user_chats(self, user_id: str) -> List[AIChat]:
-        stmt = (
-            select(AIChat)
-            .where(AIChat.user_id == user_id)
-            .order_by(AIChat.created_at.desc())
-        )
-        result = await self.db.execute(stmt)
-        return result.scalars().all()

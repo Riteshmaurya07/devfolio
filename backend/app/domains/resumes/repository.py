@@ -1,51 +1,86 @@
 from typing import Optional, List
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
-from app.domains.resumes.models import Resume, ResumeVersion
+from sqlalchemy import update, func
+from app.domains.resumes.models import ResumeVersion
 
 class ResumeRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_resume(self, user_id: str, title: str) -> Resume:
-        resume = Resume(user_id=user_id, title=title)
-        self.db.add(resume)
-        await self.db.commit()
-        await self.db.refresh(resume)
-        return resume
+    async def get_all_by_profile_id(self, profile_id: UUID) -> List[ResumeVersion]:
+        res = await self.db.execute(
+            select(ResumeVersion)
+            .where(ResumeVersion.profile_id == profile_id)
+            .order_by(ResumeVersion.version_number.desc())
+        )
+        return res.scalars().all()
 
-    async def add_version(self, resume_id: str, resume_data: dict) -> ResumeVersion:
-        version = ResumeVersion(resume_id=resume_id, resume_data=resume_data)
-        self.db.add(version)
-        await self.db.commit()
-        await self.db.refresh(version)
+    async def get_active_by_profile_id(self, profile_id: UUID) -> Optional[ResumeVersion]:
+        res = await self.db.execute(
+            select(ResumeVersion)
+            .where(ResumeVersion.profile_id == profile_id, ResumeVersion.is_active == True)
+        )
+        return res.scalars().first()
+
+    async def get_by_id(self, version_id: UUID) -> Optional[ResumeVersion]:
+        res = await self.db.execute(
+            select(ResumeVersion).where(ResumeVersion.id == version_id)
+        )
+        return res.scalars().first()
+
+    async def update_version(self, version_id: UUID, title: str, content: dict) -> Optional[ResumeVersion]:
+        version = await self.get_by_id(version_id)
+        if version:
+            version.title = title
+            version.content = content
+            await self.db.commit()
+            await self.db.refresh(version)
         return version
 
-    async def get_resumes_by_user(self, user_id: str) -> List[Resume]:
-        # Fetch resumes and their latest version
-        stmt = (
-            select(Resume)
-            .where(Resume.user_id == user_id)
-            .options(selectinload(Resume.versions))
-            .order_by(Resume.updated_at.desc())
+    async def get_next_version_number(self, profile_id: UUID) -> int:
+        res = await self.db.execute(
+            select(func.coalesce(func.max(ResumeVersion.version_number), 0)).where(ResumeVersion.profile_id == profile_id)
         )
-        result = await self.db.execute(stmt)
-        return result.scalars().all()
+        max_ver = res.scalar()
+        return max_ver + 1
 
-    async def get_resume_by_id(self, resume_id: str) -> Optional[Resume]:
-        stmt = (
-            select(Resume)
-            .where(Resume.id == resume_id)
-            .options(selectinload(Resume.versions))
+    async def create_version(self, profile_id: UUID, title: str, template_name: str, content: dict, is_active: bool = True) -> ResumeVersion:
+        version_num = await self.get_next_version_number(profile_id)
+        
+        # Single-Transaction Activation Swap
+        if is_active:
+            await self.db.execute(
+                update(ResumeVersion)
+                .where(ResumeVersion.profile_id == profile_id, ResumeVersion.is_active == True)
+                .values(is_active=False)
+            )
+
+        new_version = ResumeVersion(
+            profile_id=profile_id,
+            title=title,
+            version_number=version_num,
+            is_active=is_active,
+            template_name=template_name,
+            content=content
         )
-        result = await self.db.execute(stmt)
-        return result.scalars().first()
+        self.db.add(new_version)
+        await self.db.commit()
+        await self.db.refresh(new_version)
+        return new_version
 
-    async def update_resume_title(self, resume_id: str, new_title: str) -> Optional[Resume]:
-        resume = await self.get_resume_by_id(resume_id)
-        if resume:
-            resume.title = new_title
+    async def activate_version(self, profile_id: UUID, version_id: UUID) -> ResumeVersion:
+        # Single-Transaction Active Version Swap
+        await self.db.execute(
+            update(ResumeVersion)
+            .where(ResumeVersion.profile_id == profile_id, ResumeVersion.is_active == True)
+            .values(is_active=False)
+        )
+        
+        target = await self.get_by_id(version_id)
+        if target:
+            target.is_active = True
             await self.db.commit()
-            await self.db.refresh(resume)
-        return resume
+            await self.db.refresh(target)
+        return target

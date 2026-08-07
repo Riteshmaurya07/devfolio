@@ -1,48 +1,55 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
+from uuid import UUID
+from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import update
-from datetime import datetime
-from app.domains.platforms.models import ConnectedAccount, PlatformStatsHistory
+from app.domains.platforms.models import CodingProfile, CodeforcesStats, LeetCodeStats, CodeChefStats
 
-class PlatformRepository:
+class CodingProfileRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_account_by_id(self, account_id: str) -> Optional[ConnectedAccount]:
-        result = await self.db.execute(select(ConnectedAccount).where(ConnectedAccount.id == account_id))
-        return result.scalars().first()
-
-    async def get_accounts_by_user(self, user_id: str) -> List[ConnectedAccount]:
-        result = await self.db.execute(select(ConnectedAccount).where(ConnectedAccount.user_id == user_id))
-        return result.scalars().all()
-
-    async def create_account(self, user_id: str, platform_name: str, username: str) -> ConnectedAccount:
-        acc = ConnectedAccount(
-            user_id=user_id,
-            platform_name=platform_name,
-            platform_username=username
+    async def get_by_profile_and_platform(self, profile_id: UUID, platform: str) -> Optional[CodingProfile]:
+        res = await self.db.execute(
+            select(CodingProfile).where(
+                CodingProfile.profile_id == profile_id,
+                CodingProfile.platform == platform
+            )
         )
-        self.db.add(acc)
+        return res.scalars().first()
+
+    async def get_all_by_profile_id(self, profile_id: UUID) -> List[CodingProfile]:
+        res = await self.db.execute(
+            select(CodingProfile).where(CodingProfile.profile_id == profile_id)
+        )
+        return res.scalars().all()
+
+    async def upsert_coding_profile(self, profile_id: UUID, platform: str, external_username: str) -> CodingProfile:
+        existing = await self.get_by_profile_and_platform(profile_id, platform)
+        if existing:
+            existing.external_username = external_username
+            existing.sync_status = "ok"
+            existing.sync_error_message = None
+            await self.db.commit()
+            await self.db.refresh(existing)
+            return existing
+
+        cp = CodingProfile(
+            profile_id=profile_id,
+            platform=platform,
+            external_username=external_username,
+            sync_status="ok"
+        )
+        self.db.add(cp)
         await self.db.commit()
-        await self.db.refresh(acc)
-        return acc
+        await self.db.refresh(cp)
+        return cp
 
-    async def create_history(self, account_id: str, raw_data: dict, parsed_metrics: dict) -> PlatformStatsHistory:
-        hist = PlatformStatsHistory(
-            account_id=account_id,
-            raw_data=raw_data,
-            parsed_metrics=parsed_metrics
-        )
-        self.db.add(hist)
-        
-        # Update last_synced_at
-        await self.db.execute(
-            update(ConnectedAccount)
-            .where(ConnectedAccount.id == account_id)
-            .values(last_synced_at=datetime.utcnow())
-        )
-        
-        await self.db.commit()
-        await self.db.refresh(hist)
-        return hist
+    async def update_sync_status(self, profile_id: UUID, platform: str, status: str, error_msg: Optional[str] = None):
+        cp = await self.get_by_profile_and_platform(profile_id, platform)
+        if cp:
+            cp.sync_status = status
+            cp.sync_error_message = error_msg
+            if status == "ok":
+                cp.last_synced_at = datetime.utcnow()
+            await self.db.commit()

@@ -5,17 +5,16 @@ import Link from 'next/link';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { Resume } from '@/types';
 
 export default function ResumesPage() {
-  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [resumes, setResumes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
 
   const fetchResumes = async () => {
     try {
-      const res = await api.get('/resumes');
-      setResumes(res.data);
+      const res = await api.get('/resumes/me');
+      setResumes(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       toast.error('Failed to load resumes');
     } finally {
@@ -32,16 +31,22 @@ export default function ResumesPage() {
     try {
       await api.post('/resumes', {
         title: 'Untitled Resume',
-        resume_data: { 
-          basics: { name: '', email: '', summary: '' },
+        template_name: 'modern',
+        content: {
+          contact: { name: '', email: '', phone: '', location: '', website: '', linkedin: '', github: '' },
+          summary: '',
+          skills: [],
           experience: [],
-          education: []
+          education: [],
+          projects: [],
+          certifications: []
         }
       });
       toast.success('Resume created successfully');
       fetchResumes();
-    } catch (err) {
+    } catch (err: any) {
       toast.error('Failed to create resume');
+      console.error(err);
     } finally {
       setIsCreating(false);
     }

@@ -11,3 +11,15 @@ PyJWT==2.8.0
 httpx==0.25.0
 celery==5.3.4
 redis==5.0.1
+pytest==7.4.2
+pytest-asyncio==0.21.1
+pillow==10.0.1
+python-multipart==0.0.6
+cryptography==41.0.4
+reportlab==4.0.5
+python-docx==0.8.11
+pypdf==3.16.2
+
+
+
+

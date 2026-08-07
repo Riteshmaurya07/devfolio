@@ -1,59 +1,65 @@
-from typing import List, Optional
+from typing import Optional, List
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
-from sqlalchemy import update
-from app.domains.roadmaps.models import Roadmap, RoadmapWeek, RoadmapTask
+from sqlalchemy import text
+from app.domains.roadmaps.models import RoadmapTemplate, RoadmapProgress
 
 class RoadmapRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_user_roadmaps(self, user_id: str) -> List[Roadmap]:
-        stmt = (
-            select(Roadmap)
-            .where(Roadmap.user_id == user_id)
-            .order_by(Roadmap.created_at.desc())
-        )
-        result = await self.db.execute(stmt)
-        return result.scalars().all()
+    async def get_all_templates(self) -> List[RoadmapTemplate]:
+        res = await self.db.execute(select(RoadmapTemplate))
+        return res.scalars().all()
 
-    async def get_roadmap_details(self, roadmap_id: str) -> Optional[Roadmap]:
-        stmt = (
-            select(Roadmap)
-            .where(Roadmap.id == roadmap_id)
-            .options(
-                selectinload(Roadmap.weeks).selectinload(RoadmapWeek.tasks)
+    async def get_template_by_slug(self, slug: str) -> Optional[RoadmapTemplate]:
+        res = await self.db.execute(select(RoadmapTemplate).where(RoadmapTemplate.slug == slug))
+        return res.scalars().first()
+
+    async def get_template_by_id(self, template_id: UUID) -> Optional[RoadmapTemplate]:
+        res = await self.db.execute(select(RoadmapTemplate).where(RoadmapTemplate.id == template_id))
+        return res.scalars().first()
+
+    async def get_progress(self, profile_id: UUID, template_id: UUID) -> Optional[RoadmapProgress]:
+        res = await self.db.execute(
+            select(RoadmapProgress).where(
+                RoadmapProgress.profile_id == profile_id,
+                RoadmapProgress.roadmap_template_id == template_id
             )
         )
-        result = await self.db.execute(stmt)
-        return result.scalars().first()
+        return res.scalars().first()
 
-    async def create_roadmap(self, user_id: str, goal: str) -> Roadmap:
-        roadmap = Roadmap(user_id=user_id, goal=goal)
-        self.db.add(roadmap)
-        await self.db.commit()
-        await self.db.refresh(roadmap)
-        return roadmap
-
-    async def add_week(self, roadmap_id: str, week_number: int, title: str) -> RoadmapWeek:
-        week = RoadmapWeek(roadmap_id=roadmap_id, week_number=week_number, title=title)
-        self.db.add(week)
-        await self.db.commit()
-        await self.db.refresh(week)
-        return week
-
-    async def add_task(self, week_id: str, description: str) -> RoadmapTask:
-        task = RoadmapTask(week_id=week_id, description=description)
-        self.db.add(task)
-        await self.db.commit()
-        await self.db.refresh(task)
-        return task
-
-    async def toggle_task(self, task_id: str, is_completed: bool):
-        await self.db.execute(
-            update(RoadmapTask)
-            .where(RoadmapTask.id == task_id)
-            .values(is_completed=is_completed)
+    async def get_all_my_progress(self, profile_id: UUID) -> List[RoadmapProgress]:
+        res = await self.db.execute(
+            select(RoadmapProgress).where(RoadmapProgress.profile_id == profile_id)
         )
+        return res.scalars().all()
+
+    async def start_roadmap(self, profile_id: UUID, template_id: UUID) -> RoadmapProgress:
+        existing = await self.get_progress(profile_id, template_id)
+        if existing:
+            return existing  # Idempotent start
+
+        progress = RoadmapProgress(
+            profile_id=profile_id,
+            roadmap_template_id=template_id,
+            milestone_states={},
+            bookmarks=[]
+        )
+        self.db.add(progress)
+        await self.db.commit()
+        await self.db.refresh(progress)
+        return progress
+
+    async def atomic_toggle_milestone(self, progress_id: UUID, milestone_id: str, is_completed: bool):
+        # Atomic PostgreSQL jsonb_set update statement avoiding application read-modify-write race conditions
+        query = text(
+            "UPDATE roadmap_progress SET milestone_states = jsonb_set(milestone_states, ARRAY[:mid], :val::jsonb), updated_at = NOW() WHERE id = :pid"
+        )
+        await self.db.execute(query, {
+            "mid": milestone_id,
+            "val": "true" if is_completed else "false",
+            "pid": progress_id
+        })
         await self.db.commit()
