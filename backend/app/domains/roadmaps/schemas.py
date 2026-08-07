@@ -1,34 +1,40 @@
-from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime
-from typing import List, Optional
 
-class TaskResponse(BaseModel):
-    id: UUID
-    description: str
-    is_completed: bool
-
-    class Config:
-        from_attributes = True
-
-class WeekResponse(BaseModel):
-    id: UUID
-    week_number: int
+class MilestoneSchema(BaseModel):
+    id: str
     title: str
-    tasks: List[TaskResponse] = []
+    description: str
 
-    class Config:
-        from_attributes = True
-
-class RoadmapCreate(BaseModel):
-    goal: str
-
-class RoadmapResponse(BaseModel):
+class RoadmapTemplateResponse(BaseModel):
     id: UUID
-    goal: str
-    is_completed: bool
-    created_at: datetime
-    weeks: List[WeekResponse] = []
+    slug: str
+    title: str
+    category: str
+    description: Optional[str] = None
+    milestones: List[MilestoneSchema]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+class MilestoneToggleRequest(BaseModel):
+    milestone_id: str
+    is_completed: bool
+
+class BookmarkToggleRequest(BaseModel):
+    milestone_id: str
+
+class RoadmapProgressResponse(BaseModel):
+    id: UUID
+    profile_id: UUID
+    roadmap_template_id: UUID
+    milestone_states: Dict[str, bool]
+    bookmarks: List[str]
+    ai_annotation: Optional[Dict[str, Any]] = None
+    completion_percentage: float
+    target_completion_days: int
+    started_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

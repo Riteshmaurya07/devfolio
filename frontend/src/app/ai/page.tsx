@@ -11,14 +11,23 @@ export default function AIChatPage() {
   const [input, setInput] = useState('');
 
   const fetchChats = async () => {
-    const res = await api.get('/ai/chats');
-    setChats(res.data);
+    try {
+      const res = await api.get('/ai/conversations');
+      setChats(res.data || []);
+    } catch (err) {
+      console.error(err);
+      setChats([]);
+    }
   };
 
   const fetchMessages = async (chatId: string) => {
-    const res = await api.get(`/ai/chats/${chatId}`);
-    setMessages(res.data.messages);
-    setActiveChat(chatId);
+    try {
+      const res = await api.get(`/ai/conversations/${chatId}/messages`);
+      setMessages(res.data || []);
+      setActiveChat(chatId);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   useEffect(() => {
@@ -26,9 +35,13 @@ export default function AIChatPage() {
   }, []);
 
   const createChat = async () => {
-    const res = await api.post('/ai/chats', { title: 'New Conversation', topic: 'general' });
-    fetchChats();
-    fetchMessages(res.data.id);
+    try {
+      const res = await api.post('/ai/conversations', { title: 'New Conversation', mode: 'career_advice' });
+      fetchChats();
+      fetchMessages(res.data.id);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const sendMessage = async (e: React.FormEvent) => {

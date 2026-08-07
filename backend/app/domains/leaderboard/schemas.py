@@ -1,12 +1,36 @@
-from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, ConfigDict
+from uuid import UUID
+from datetime import datetime
 
-class LeaderboardUser(BaseModel):
-    username: str
-    avatar_url: Optional[str]
-    developer_score: int
-    total_problems_solved: int
-    current_streak: int
+class LeaderboardEntryResponse(BaseModel):
+    id: UUID
+    profile_id: UUID
+    rank: int
+    total_score: float
+    coding_score: float
+    contribution_score: float
+    roadmap_score: float
+    portfolio_score: float
+    score_breakdown: Dict[str, Any]
+    profile_name: Optional[str] = None
+    profile_username: Optional[str] = None
+    avatar_url: Optional[str] = None
 
-class LeaderboardResponse(BaseModel):
-    users: List[LeaderboardUser]
+    model_config = ConfigDict(from_attributes=True)
+
+class BadgeResponse(BaseModel):
+    id: UUID
+    slug: str
+    title: str
+    description: str
+    icon_name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+class UserBadgeResponse(BaseModel):
+    id: UUID
+    badge: BadgeResponse
+    awarded_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

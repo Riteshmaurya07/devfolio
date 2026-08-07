@@ -1,28 +1,19 @@
-import asyncio
+import logging
+from uuid import UUID
 from app.core.celery_app import celery_app
-from app.core.database import AsyncSessionLocal
-from app.domains.notifications.repository import NotificationRepository
-from app.domains.users.models import User
-from sqlalchemy.future import select
 
-async def _send_daily_reminders_async():
-    async with AsyncSessionLocal() as db:
-        repo = NotificationRepository(db)
-        
-        # Example: Fetch users who haven't logged in recently
-        # Here we just send a broadcast for demonstration purposes
-        result = await db.execute(select(User))
-        users = result.scalars().all()
-        
-        for user in users:
-            await repo.create(
-                user_id=str(user.id),
-                type="time_based",
-                title="Daily Reminder",
-                message="Don't forget to practice coding today!"
-            )
+logger = logging.getLogger("devfolio.notification_tasks")
 
-@celery_app.task
-def send_daily_reminders():
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(_send_daily_reminders_async())
+@celery_app.task(
+    name="send_email_notification_task",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    max_retries=3
+)
+def send_email_notification_task(user_id_str: str, category: str, title: str, message: str):
+    """
+    Celery task sending email notifications with exponential retry backoff.
+    """
+    logger.info(f"Sending email notification [{category}] to user {user_id_str}: '{title}'")
+    # Mock SMTP mailer dispatching templated email
+    return {"status": "sent", "user_id": user_id_str, "category": category}

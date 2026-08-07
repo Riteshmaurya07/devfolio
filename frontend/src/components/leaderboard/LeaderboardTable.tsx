@@ -12,8 +12,10 @@ interface LeaderboardTableProps {
   users: LeaderboardUser[];
 }
 
-export default function LeaderboardTable({ users }: LeaderboardTableProps) {
-  if (users.length === 0) {
+export default function LeaderboardTable({ users = [] }: LeaderboardTableProps) {
+  const userList = Array.isArray(users) ? users : [];
+
+  if (userList.length === 0) {
     return <div className="p-6 text-center text-gray-500">No users found.</div>;
   }
 
@@ -30,7 +32,7 @@ export default function LeaderboardTable({ users }: LeaderboardTableProps) {
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-          {users.map((user, index) => (
+          {userList.map((user, index) => (
             <tr key={user.username} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
                 #{index + 1}

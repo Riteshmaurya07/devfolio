@@ -1,31 +1,33 @@
-from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime
-from typing import List
 
-class MessageCreate(BaseModel):
-    content: str
-    role: str = "user"
+class CreateConversationRequest(BaseModel):
+    title: Optional[str] = "Career Advice Session"
+    mode: Optional[str] = "career_advice"
 
-class MessageResponse(BaseModel):
+class AIMessageSchema(BaseModel):
     id: UUID
+    conversation_id: UUID
     role: str
     content: str
+    status: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
-class ChatCreate(BaseModel):
-    title: str
-    topic: str
-
-class ChatResponse(BaseModel):
+class AIConversationResponse(BaseModel):
     id: UUID
+    profile_id: UUID
     title: str
-    topic: str
+    mode: str
+    context_snapshot: Dict[str, Any]
     created_at: datetime
-    messages: List[MessageResponse] = []
+    updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+class ChatStreamRequest(BaseModel):
+    conversation_id: UUID
+    message: str

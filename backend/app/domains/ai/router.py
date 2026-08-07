@@ -1,40 +1,79 @@
-from fastapi import APIRouter, Depends
 from typing import List
-from app.domains.ai.schemas import ChatCreate, ChatResponse, MessageCreate, MessageResponse
-from app.domains.ai.service import AIService
-from app.api.dependencies import get_ai_service, get_current_user
+from uuid import UUID
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import StreamingResponse
 from app.domains.users.models import User
+from app.api.dependencies import get_current_user
+from app.domains.ai.schemas import (
+    CreateConversationRequest, AIConversationResponse, AIMessageSchema, ChatStreamRequest
+)
+from app.domains.ai.repository import AIRepository
+from app.domains.ai.service import AIService
+from app.domains.profiles.repository import ProfileRepository
+from app.core.database import get_db
+from app.core.exceptions import NotFoundError
 
-router = APIRouter(prefix="/ai/chats", tags=["ai"])
+router = APIRouter(prefix="/ai", tags=["ai"])
 
-@router.post("/", response_model=ChatResponse)
-async def create_chat(
-    req: ChatCreate,
+def get_ai_service_with_repo(db = Depends(get_db)) -> AIService:
+    return AIService(AIRepository(db))
+
+@router.get("/conversations", response_model=List[AIConversationResponse])
+async def list_conversations(
     current_user: User = Depends(get_current_user),
-    service: AIService = Depends(get_ai_service)
+    service: AIService = Depends(get_ai_service_with_repo),
+    db = Depends(get_db)
 ):
-    return await service.create_chat(str(current_user.id), req)
+    profile_repo = ProfileRepository(db)
+    profile = await profile_repo.get_by_user_id(current_user.id)
+    if not profile:
+        return []
+    return await service.repository.get_all_conversations(profile.id)
 
-@router.get("/", response_model=List[ChatResponse])
-async def list_chats(
+@router.post("/conversations", response_model=AIConversationResponse)
+async def create_conversation(
+    request: CreateConversationRequest,
     current_user: User = Depends(get_current_user),
-    service: AIService = Depends(get_ai_service)
+    service: AIService = Depends(get_ai_service_with_repo),
+    db = Depends(get_db)
 ):
-    return await service.get_user_chats(str(current_user.id))
+    profile_repo = ProfileRepository(db)
+    profile = await profile_repo.get_by_user_id(current_user.id)
+    if not profile:
+        raise NotFoundError(message="User profile not found")
 
-@router.get("/{chat_id}", response_model=ChatResponse)
-async def get_chat(
-    chat_id: str,
-    current_user: User = Depends(get_current_user),
-    service: AIService = Depends(get_ai_service)
-):
-    return await service.get_chat_history(str(current_user.id), chat_id)
+    snapshot = await service.build_context_snapshot_for_profile(profile, db)
+    return await service.repository.create_conversation(
+        profile_id=profile.id,
+        title=request.title or "Career Advice Session",
+        mode=request.mode or "career_advice",
+        context_snapshot=snapshot
+    )
 
-@router.post("/{chat_id}/messages", response_model=MessageResponse)
-async def send_message(
-    chat_id: str,
-    req: MessageCreate,
-    current_user: User = Depends(get_current_user),
-    service: AIService = Depends(get_ai_service)
+@router.get("/conversations/{conversation_id}/messages", response_model=List[AIMessageSchema])
+async def get_conversation_messages(
+    conversation_id: UUID,
+    service: AIService = Depends(get_ai_service_with_repo)
 ):
-    return await service.send_message(str(current_user.id), chat_id, req)
+    return await service.repository.get_messages(conversation_id)
+
+@router.post("/chat/stream")
+async def chat_stream(
+    request: ChatStreamRequest,
+    current_user: User = Depends(get_current_user),
+    service: AIService = Depends(get_ai_service_with_repo),
+    db = Depends(get_db)
+):
+    profile_repo = ProfileRepository(db)
+    profile = await profile_repo.get_by_user_id(current_user.id)
+    if not profile:
+        raise NotFoundError(message="User profile not found")
+
+    # Enforce Rate Limit per user
+    service.check_rate_limit(str(profile.id))
+
+    return StreamingResponse(
+        service.stream_chat_response(request.conversation_id, request.message, str(profile.id), db),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
+    )

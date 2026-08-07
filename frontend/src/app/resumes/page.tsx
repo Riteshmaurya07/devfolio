@@ -10,10 +10,11 @@ export default function ResumesPage() {
 
   const fetchResumes = async () => {
     try {
-      const res = await api.get('/resumes');
-      setResumes(res.data);
+      const res = await api.get('/resumes/me');
+      setResumes(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error(err);
+      setResumes([]);
     } finally {
       setLoading(false);
     }
@@ -27,15 +28,20 @@ export default function ResumesPage() {
     try {
       await api.post('/resumes', {
         title: 'Untitled Resume',
-        resume_data: { 
-          basics: { name: '', email: '', summary: '' },
+        template_name: 'modern',
+        content: {
+          contact: { name: '', email: '', phone: '', location: '', website: '', linkedin: '', github: '' },
+          summary: '',
+          skills: [],
           experience: [],
-          education: []
+          education: [],
+          projects: [],
+          certifications: []
         }
       });
       fetchResumes();
-    } catch (err) {
-      console.error('Failed to create resume');
+    } catch (err: any) {
+      console.error('Failed to create resume:', err.response?.data || err.message || err);
     }
   };
 

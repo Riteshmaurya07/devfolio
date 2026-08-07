@@ -21,13 +21,20 @@ if config.config_file_name is not None:
 from app.core.database import Base
 # Import all models here so Alembic can discover them
 from app.domains.users.models import User
-from app.domains.platforms.models import ConnectedAccount, PlatformStatsHistory
-from app.domains.leaderboard.models import UserMetrics
+from app.domains.profiles.models import Profile, SocialLink, Follow, ProfileView
+from app.domains.github.models import GitHubAccount, RepositoryModel
+from app.domains.portfolio.models import PortfolioConfig, Project, Experience, Education, Skill, Certification, Achievement, PortfolioView as PView
+from app.domains.platforms.models import CodingProfile, CodeforcesStats, LeetCodeStats, CodeChefStats
+from app.domains.leaderboard.models import LeaderboardEntry, Badge, UserBadge
 from app.domains.social.models import FriendRequest
 from app.domains.notifications.models import Notification
-from app.domains.resumes.models import Resume, ResumeVersion
-from app.domains.ai.models import AIChat, AIMessage
-from app.domains.roadmaps.models import Roadmap, RoadmapWeek, RoadmapTask
+from app.domains.jobs.models import JobApplication, JobStatusHistory, Interview
+from app.domains.analytics.models import AnalyticsEvent, AnalyticsDailySummary
+from app.domains.feed.models import Post, Comment, PostLike, Bookmark, TrendingProject
+from app.domains.admin.models import AdminAuditLog, UserReport
+from app.domains.resumes.models import ResumeVersion
+from app.domains.ai.models import AIConversation, AIMessage
+from app.domains.roadmaps.models import RoadmapTemplate, RoadmapProgress
 target_metadata = Base.metadata
 
 from app.core.config import settings

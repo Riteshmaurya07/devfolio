@@ -13,9 +13,12 @@ export default function DashboardPage() {
     const fetchLeaderboard = async () => {
       try {
         const res = await api.get('/leaderboard/global');
-        setGlobalLeaderboard(res.data.users);
+        const data = res.data;
+        const list = Array.isArray(data) ? data : (data?.rankings || data?.users || data?.items || []);
+        setGlobalLeaderboard(list);
       } catch (err) {
-        console.error('Failed to fetch leaderboard');
+        console.error('Failed to fetch leaderboard', err);
+        setGlobalLeaderboard([]);
       } finally {
         setLoading(false);
       }

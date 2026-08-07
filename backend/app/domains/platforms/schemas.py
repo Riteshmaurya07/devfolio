@@ -1,20 +1,21 @@
-from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime
-from typing import Optional
 
-class ConnectAccountRequest(BaseModel):
-    platform_name: str
-    username: str
+class ConnectPlatformRequest(BaseModel):
+    platform: str
+    external_username: str
 
-class ConnectedAccountResponse(BaseModel):
+class CodingProfileResponse(BaseModel):
     id: UUID
-    platform_name: str
-    platform_username: str
-    last_synced_at: Optional[datetime]
+    profile_id: UUID
+    platform: str
+    external_username: str
+    sync_status: str
+    sync_error_message: Optional[str] = None
+    ai_recommendation: Optional[Dict[str, Any]] = None
+    last_synced_at: Optional[datetime] = None
+    created_at: datetime
 
-    class Config:
-        from_attributes = True
-
-class SyncAccountResponse(BaseModel):
-    status: str
+    model_config = ConfigDict(from_attributes=True)
