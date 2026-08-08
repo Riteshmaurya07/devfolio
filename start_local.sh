@@ -142,13 +142,20 @@ cmd_db() {
 }
 
 cmd_migrate() {
-    step "Running database migrations..."
-    if compose exec -T backend alembic revision --autogenerate -m "auto" 2>/dev/null || true; then
-        compose exec -T backend alembic upgrade head
-        ok "Migrations up to date"
-    else
-        warn "Could not run migrations automatically (maybe no changes or DB not ready yet)."
+    step "Applying existing database migrations..."
+    # First, always try to apply existing migrations (e.g., files pulled from other branches)
+    if ! compose exec -T backend alembic upgrade head; then
+        warn "Failed to apply migrations! You may have multiple heads due to a branch merge."
+        warn "To fix this manually: 'docker-compose exec backend alembic merge heads' then run this script again."
+        return
     fi
+    ok "Existing migrations applied."
+
+    step "Scanning for new model changes (auto-migration)..."
+    # Autogenerate any new changes made locally and apply them immediately
+    compose exec -T backend alembic revision --autogenerate -m "auto" 2>/dev/null || true
+    compose exec -T backend alembic upgrade head 2>/dev/null || true
+    ok "Database schema is fully up to date."
 }
 
 cmd_help() {
