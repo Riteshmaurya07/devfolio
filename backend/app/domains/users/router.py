@@ -36,7 +36,7 @@ async def login(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=True,
+        secure=settings.COOKIE_SECURE,
         samesite="lax"
     )
     return {"access_token": access_token, "token_type": "bearer"}
@@ -109,7 +109,7 @@ async def github_callback(code: str, auth_service: AuthService = Depends(get_aut
             key="refresh_token",
             value=refresh_token,
             httponly=True,
-            secure=True,
+            secure=settings.COOKIE_SECURE,
             samesite="lax"
         )
         return response
@@ -152,7 +152,7 @@ async def refresh_token(
             key="refresh_token",
             value=new_refresh_token,
             httponly=True,
-            secure=True,
+            secure=settings.COOKIE_SECURE,
             samesite="lax"
         )
         return {"access_token": access_token, "token_type": "bearer"}
