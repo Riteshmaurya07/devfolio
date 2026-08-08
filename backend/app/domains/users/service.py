@@ -50,3 +50,15 @@ class AuthService:
         items, total = await self.user_repo.list_paginated(params)
         user_responses = [UserResponse.model_validate(u) for u in items]
         return PaginatedResponse.create(items=user_responses, total=total, params=params)
+
+    async def onboard_user(self, user_id: UUID, goals: List[str], preferences: Optional[dict] = None) -> User:
+        user = await self.get_user_by_id(user_id)
+        user.is_onboarded = True
+        
+        current_prefs = user.preferences or {}
+        if preferences:
+            current_prefs.update(preferences)
+        current_prefs['goals'] = goals
+        user.preferences = current_prefs
+        
+        return await self.user_repo.update(user)

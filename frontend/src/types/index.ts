@@ -3,6 +3,7 @@ export interface User {
   username: string;
   email: string;
   avatar_url?: string;
+  is_onboarded: boolean;
 }
 
 export interface Resume {

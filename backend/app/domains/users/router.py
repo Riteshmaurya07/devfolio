@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, Response, Request, HTTPException
-from app.domains.users.schemas import UserCreate, UserResponse, LoginRequest, TokenResponse
+from app.domains.users.schemas import UserCreate, UserResponse, LoginRequest, TokenResponse, UserOnboardingRequest
 from app.domains.users.service import AuthService
 from app.domains.users.models import User
 from app.api.dependencies import get_auth_service, get_current_user
@@ -21,7 +21,7 @@ async def login(
 ):
     user = await auth_service.authenticate_user(login_data)
     access_token = auth_service.create_access_token(
-        data={"sub": str(user.id), "email": user.email}
+        data={"sub": str(user.id), "email": user.email, "is_onboarded": user.is_onboarded}
     )
     
     from app.core.config import settings
@@ -44,6 +44,29 @@ async def login(
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+@router.post("/me/onboard")
+async def onboard_me(
+    onboarding_data: UserOnboardingRequest,
+    current_user: User = Depends(get_current_user),
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    updated_user = await auth_service.onboard_user(
+        user_id=current_user.id,
+        goals=onboarding_data.goals,
+        preferences=onboarding_data.preferences
+    )
+    
+    # Issue a new access token that has is_onboarded = True
+    new_access_token = auth_service.create_access_token(
+        data={"sub": str(updated_user.id), "email": updated_user.email, "is_onboarded": updated_user.is_onboarded}
+    )
+    
+    return {
+        "user": UserResponse.model_validate(updated_user),
+        "access_token": new_access_token,
+        "token_type": "bearer"
+    }
 
 @router.get("/github/login")
 async def github_login():
@@ -95,7 +118,7 @@ async def github_callback(code: str, auth_service: AuthService = Depends(get_aut
             # Optional: update avatar_url directly in DB if we added it to model
             
         jwt_token = auth_service.create_access_token(
-            data={"sub": str(user.id), "email": user.email}
+            data={"sub": str(user.id), "email": user.email, "is_onboarded": user.is_onboarded}
         )
         
         from datetime import timedelta
@@ -138,7 +161,7 @@ async def refresh_token(
             
         # Issue new access token
         access_token = auth_service.create_access_token(
-            data={"sub": str(user.id), "email": user.email}
+            data={"sub": str(user.id), "email": user.email, "is_onboarded": user.is_onboarded}
         )
         
         # Issue new refresh token

@@ -12,6 +12,10 @@ These features have end-to-end (Database -> Backend API -> Frontend UI) implemen
 *   **Basic JWT Auth:** Users can sign up and log in using an email and password.
 *   **Session Management:** The system successfully issues Access Tokens and HttpOnly Refresh tokens, handling session continuity securely.
 
+### 1.5. Overall Product Flow & Routing (Feature 0 & 6)
+*   **Global Routing:** Strict Next.js middleware enforces `Authentication -> Onboarding -> Dashboard` routing.
+*   **Onboarding Wizard:** The post-registration flow requires users to set their initial goals (e.g. tracking progress, resume building) before proceeding to the dashboard.
+
 ### 2. GitHub OAuth (Feature 2)
 *   **OAuth Flow:** Users can authenticate via GitHub. The system handles the callback, creating an account or linking it to an existing session seamlessly.
 
@@ -44,9 +48,6 @@ These features have end-to-end (Database -> Backend API -> Frontend UI) implemen
 
 These features were detailed in the user flow but either do not exist yet, exist only in the backend, or are only partially ("half-baked") implemented in the UI.
 
-### 0. Overall Product Flow & Routing
-*   **Global Routing:** The strict enforcement of `Authentication -> Onboarding -> Dashboard` routing does not exist. Users skip onboarding completely.
-
 ### 1 & 4. Registration & Security (Features 1.1, 4)
 *   **Email Verification:** Registration works, but the email verification loop (sending the email, clicking the link, verifying the token) is entirely missing.
 *   **Password Reset:** The "Forgot Password" flow (generating token, emailing, resetting) does not exist.
@@ -56,9 +57,6 @@ These features were detailed in the user flow but either do not exist yet, exist
 *   **Profile Settings:** Functionality to dynamically change username, email, or passwords from the settings page is missing.
 *   **Live Validation:** Checking username availability dynamically while changing it is missing.
 *   **Notification Preferences:** Allowing the user to toggle which notifications they receive is missing.
-
-### 6. Onboarding Flow (Feature 6)
-*   **Onboarding Wizard:** The post-registration flow to connect platforms, choose goals, and set preferences before hitting the dashboard is completely missing.
 
 ### 8, 9, 27 & 28. Platform Management (Features 8, 9, 27, 28)
 *   **Username-Based Connections:** "Connect LeetCode" by typing a username (without OAuth) is either missing or lacks a dedicated polished UI flow.

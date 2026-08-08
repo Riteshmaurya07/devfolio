@@ -14,6 +14,7 @@ class User(Base):
     auth_provider = Column(String, default="local")  # 'local', 'github', etc.
     avatar_url = Column(String, nullable=True)
     is_email_verified = Column(Boolean, default=False)
+    is_onboarded = Column(Boolean, default=False, nullable=False)
     is_admin = Column(Boolean, default=False, nullable=False)
     is_suspended = Column(Boolean, default=False, nullable=False)
     preferences = Column(JSONB, default=lambda: {"sync_mode": "background"})
