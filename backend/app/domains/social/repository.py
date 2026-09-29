@@ -20,13 +20,28 @@ class FriendRepository:
         return result.scalars().first()
 
     async def create_request(self, requester_id: str, addressee_id: str) -> FriendRequest:
-        req = FriendRequest(requester_id=requester_id, addressee_id=addressee_id, status="accepted") 
-        # According to requirements: "if only one send it then this is it both are connected now"
-        # So we create it directly as 'accepted' for mutual connection
+        req = FriendRequest(requester_id=requester_id, addressee_id=addressee_id, status="pending") 
         self.db.add(req)
         await self.db.commit()
         await self.db.refresh(req)
         return req
+
+    async def update_request_status(self, request_id: str, status: str) -> Optional[FriendRequest]:
+        result = await self.db.execute(
+            select(FriendRequest).where(FriendRequest.id == request_id)
+        )
+        req = result.scalars().first()
+        if req:
+            req.status = status
+            await self.db.commit()
+            await self.db.refresh(req)
+        return req
+
+    async def get_request_by_id(self, request_id: str) -> Optional[FriendRequest]:
+        result = await self.db.execute(
+            select(FriendRequest).where(FriendRequest.id == request_id)
+        )
+        return result.scalars().first()
 
     async def get_friends(self, user_id: str) -> List[FriendRequest]:
         result = await self.db.execute(

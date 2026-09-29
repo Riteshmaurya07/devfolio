@@ -16,7 +16,25 @@ async def add_friend(
     service: FriendService = Depends(get_friend_service)
 ):
     await service.add_friend(str(current_user.id), req.target_user_id)
-    return {"status": "success", "message": "Friend added."}
+    return {"status": "success", "message": "Friend request sent."}
+
+@router.post("/{request_id}/accept")
+async def accept_friend_request(
+    request_id: str,
+    current_user: User = Depends(get_current_user),
+    service: FriendService = Depends(get_friend_service)
+):
+    await service.accept_request(str(current_user.id), request_id)
+    return {"status": "success", "message": "Friend request accepted."}
+
+@router.post("/{request_id}/reject")
+async def reject_friend_request(
+    request_id: str,
+    current_user: User = Depends(get_current_user),
+    service: FriendService = Depends(get_friend_service)
+):
+    await service.reject_request(str(current_user.id), request_id)
+    return {"status": "success", "message": "Friend request rejected."}
 
 @router.get("/")
 async def get_friends(
