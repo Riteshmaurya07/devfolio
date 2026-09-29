@@ -72,15 +72,36 @@ async def onboard_me(
 async def github_login():
     from app.core.config import settings
     from fastapi.responses import RedirectResponse
-    github_auth_url = f"https://github.com/login/oauth/authorize?client_id={settings.GITHUB_CLIENT_ID}&scope=user:email"
-    return RedirectResponse(github_auth_url)
+    import secrets
+    state = secrets.token_urlsafe(32)
+    github_auth_url = f"https://github.com/login/oauth/authorize?client_id={settings.GITHUB_CLIENT_ID}&scope=user:email&state={state}"
+    response = RedirectResponse(github_auth_url)
+    response.set_cookie(
+        key="oauth_state",
+        value=state,
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite="lax",
+        max_age=600
+    )
+    return response
 
 @router.get("/github/callback")
-async def github_callback(code: str, auth_service: AuthService = Depends(get_auth_service)):
+async def github_callback(
+    code: str, 
+    request: Request,
+    auth_service: AuthService = Depends(get_auth_service)
+):
     from app.core.config import settings
     from fastapi.responses import RedirectResponse
     import httpx
     import uuid
+
+    oauth_state = request.cookies.get("oauth_state")
+    state = request.query_params.get("state")
+    
+    if not oauth_state or not state or oauth_state != state:
+        raise HTTPException(status_code=400, detail="Invalid state parameter")
 
     # Exchange code for access token
     async with httpx.AsyncClient() as client:
@@ -135,6 +156,7 @@ async def github_callback(code: str, auth_service: AuthService = Depends(get_aut
             secure=settings.COOKIE_SECURE,
             samesite="lax"
         )
+        response.delete_cookie("oauth_state")
         return response
 
 @router.post("/refresh")

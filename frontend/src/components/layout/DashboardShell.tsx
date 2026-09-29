@@ -10,9 +10,19 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const { user, logout } = useAuthStore();
   const { sidebarOpen, toggleSidebar } = useUIStore();
 
-  const handleLogout = () => {
-    logout();
-    window.location.href = '/login';
+  const handleLogout = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+      await fetch(`${apiUrl}/users/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      logout();
+      window.location.href = '/login';
+    }
   };
 
   return (
