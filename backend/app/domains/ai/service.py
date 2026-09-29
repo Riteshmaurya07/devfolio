@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from app.domains.ai.repository import AIRepository
 from app.domains.ai.context_assembler import assemble_career_context
 from app.domains.profiles.models import Profile
+from app.domains.profiles.repository import ProfileRepository
 from app.domains.resumes.repository import ResumeRepository
 from app.domains.platforms.repository import CodingProfileRepository
 from app.domains.roadmaps.repository import RoadmapRepository
@@ -86,13 +87,48 @@ class AIService:
         status = "complete"
 
         try:
-            full_text = f"[{mode.upper()}] {system_prompt} Analyzed request '{user_message}'. Focus on strengthening your core skills and practicing targeted problems."
-            tokens = full_text.split(" ")
-            for token in tokens:
-                accumulated += token + " "
-                yield f"data: {token} \n\n"
-                await asyncio.sleep(0.04)
-        except Exception:
+            import json
+            from app.core.config import settings
+            import httpx
+            
+            full_prompt = f"{system_prompt}\n\nContext:\n{json.dumps(fresh_context)}\n\nUser: {user_message}"
+            
+            if not settings.GEMINI_API_KEY:
+                yield "data: Error: Gemini API key not configured\n\n"
+                return
+
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key={settings.GEMINI_API_KEY}"
+            payload = {
+                "contents": [{"parts": [{"text": full_prompt}]}]
+            }
+
+            async with httpx.AsyncClient() as client:
+                async with client.stream("POST", url, json=payload) as response:
+                    if response.status_code != 200:
+                        yield f"data: Error from Gemini API: {response.status_code}\n\n"
+                        return
+
+                    async for line in response.aiter_lines():
+                        if line.startswith("data: "):
+                            data_str = line[6:]
+                            if data_str == "[DONE]":
+                                continue
+                            try:
+                                chunk_data = json.loads(data_str)
+                                candidates = chunk_data.get("candidates", [])
+                                if candidates:
+                                    parts = candidates[0].get("content", {}).get("parts", [])
+                                    if parts:
+                                        text = parts[0].get("text", "")
+                                        if text:
+                                            accumulated += text
+                                            # Yield proper SSE for multiline
+                                            for chunk_line in text.split('\n'):
+                                                yield f"data: {chunk_line}\n"
+                                            yield "\n"
+                            except json.JSONDecodeError:
+                                pass
+        except Exception as e:
             status = "interrupted"
             yield "data: [STREAM_INTERRUPTED]\n\n"
         finally:

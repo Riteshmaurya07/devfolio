@@ -53,3 +53,21 @@ class CodingProfileRepository:
             if status == "ok":
                 cp.last_synced_at = datetime.utcnow()
             await self.db.commit()
+
+    async def get_codeforces_stats(self, coding_profile_id: UUID) -> Optional[CodeforcesStats]:
+        res = await self.db.execute(
+            select(CodeforcesStats).where(CodeforcesStats.coding_profile_id == coding_profile_id)
+        )
+        return res.scalars().first()
+
+    async def get_leetcode_stats(self, coding_profile_id: UUID) -> Optional[LeetCodeStats]:
+        res = await self.db.execute(
+            select(LeetCodeStats).where(LeetCodeStats.coding_profile_id == coding_profile_id)
+        )
+        return res.scalars().first()
+
+    async def get_codechef_stats(self, coding_profile_id: UUID) -> Optional[CodeChefStats]:
+        res = await self.db.execute(
+            select(CodeChefStats).where(CodeChefStats.coding_profile_id == coding_profile_id)
+        )
+        return res.scalars().first()

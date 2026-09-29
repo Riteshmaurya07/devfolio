@@ -52,20 +52,34 @@ class CodingDashboardService:
 
     async def get_dashboard_summary(self, profile_id: UUID) -> Dict[str, Any]:
         profiles = await self.repository.get_all_by_profile_id(profile_id)
-        
-        combined_topic_analysis = {
-            "Dynamic Programming": {"solved": 15, "attempts": 45},
-            "Graphs": {"solved": 20, "attempts": 25},
-            "Arrays": {"solved": 50, "attempts": 55},
-            "Segment Trees": {"solved": 1, "attempts": 8}
-        }
+        combined_topic_analysis = {}
+        total_solved = 0
+
+        for cp in profiles:
+            stats = None
+            if cp.platform == "codeforces":
+                stats = await self.repository.get_codeforces_stats(cp.id)
+            elif cp.platform == "leetcode":
+                stats = await self.repository.get_leetcode_stats(cp.id)
+            elif cp.platform == "codechef":
+                stats = await self.repository.get_codechef_stats(cp.id)
+            
+            if stats:
+                total_solved += getattr(stats, "total_solved", 0)
+                
+                if hasattr(stats, "topic_analysis") and isinstance(stats.topic_analysis, dict):
+                    for topic, topic_data in stats.topic_analysis.items():
+                        if topic not in combined_topic_analysis:
+                            combined_topic_analysis[topic] = {"solved": 0, "attempts": 0}
+                        combined_topic_analysis[topic]["solved"] += topic_data.get("solved", 0)
+                        combined_topic_analysis[topic]["attempts"] += topic_data.get("attempts", 0)
 
         # Run weak area detector heuristic with 5-attempt floor
         weak_areas = detect_weak_areas(combined_topic_analysis, min_attempts=5, solve_ratio_cutoff=0.5)
 
         return {
             "profiles": profiles,
-            "total_solved": 86,
+            "total_solved": total_solved,
             "topic_analysis": combined_topic_analysis,
             "weak_areas": weak_areas
         }
