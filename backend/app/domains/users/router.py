@@ -177,7 +177,8 @@ async def refresh_token(
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid refresh token")
             
-        user = await auth_service.user_repo.get_by_id(user_id)
+        import uuid
+        user = await auth_service.user_repo.get_by_id(uuid.UUID(user_id))
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
             
