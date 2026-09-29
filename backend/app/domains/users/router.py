@@ -205,3 +205,14 @@ async def refresh_token(
         raise HTTPException(status_code=401, detail="Refresh token expired")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+@router.post("/logout")
+async def logout(response: Response):
+    from app.core.config import settings
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite="lax"
+    )
+    return {"message": "Logged out successfully"}
