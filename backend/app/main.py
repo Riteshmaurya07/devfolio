@@ -9,6 +9,7 @@ from app.domains.resumes.router import router as resumes_router
 from app.domains.ai.router import router as ai_router
 from app.domains.roadmaps.router import router as roadmaps_router
 
+from fastapi.staticfiles import StaticFiles
 from app.middleware.error_handler import ExceptionAndCorrelationMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -49,6 +50,8 @@ async def on_startup():
     except Exception as e:
         print(f"Startup seed error: {e}")
 
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.include_router(health_router.router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 app.include_router(profiles_router, prefix="/api")

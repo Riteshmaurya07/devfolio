@@ -11,7 +11,10 @@ from app.utils.pagination import PageParams, PaginatedResponse
 from app.domains.profiles.tasks import generate_profile_thumbnail
 
 UPLOAD_DIR = "/app/uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+AVATAR_DIR = os.path.join(UPLOAD_DIR, "avatars")
+COVER_DIR = os.path.join(UPLOAD_DIR, "covers")
+os.makedirs(AVATAR_DIR, exist_ok=True)
+os.makedirs(COVER_DIR, exist_ok=True)
 
 class ProfileService:
     def __init__(self, repository: ProfileRepository):
@@ -46,20 +49,25 @@ class ProfileService:
             raise NotFoundError(message="Profile not found")
 
         ext = os.path.splitext(file.filename or "")[1] or ".png"
-        filename = f"{image_type}_{profile.id}_{uuid.uuid4().hex[:8]}{ext}"
-        filepath = os.path.join(UPLOAD_DIR, filename)
+        
+        if image_type == "avatar":
+            filename = f"{user_id}{ext}"
+            filepath = os.path.join(AVATAR_DIR, filename)
+            public_url = f"/uploads/avatars/{filename}"
+        else:
+            filename = f"{user_id}{ext}"
+            filepath = os.path.join(COVER_DIR, filename)
+            public_url = f"/uploads/covers/{filename}"
 
         contents = await file.read()
         with open(filepath, "wb") as f:
             f.write(contents)
 
-        public_url = f"/static/uploads/{filename}"
-
         if image_type == "avatar":
             # Dispatch Celery task for thumbnail
             thumb_filename = f"thumb_{filename}"
             generate_profile_thumbnail.delay(filepath, 150)
-            thumb_url = f"/static/uploads/{thumb_filename}"
+            thumb_url = f"/uploads/avatars/{thumb_filename}"
             return await self.repository.update_image_urls(profile, avatar_url=public_url, thumbnail_url=thumb_url)
         else:
             return await self.repository.update_image_urls(profile, cover_url=public_url)
