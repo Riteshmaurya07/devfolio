@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
-import { FileText, Download, Upload, Sparkles, CheckCircle, RefreshCw, Layers, Layout, ArrowRight } from 'lucide-react';
+import { FileText, Download, Upload, Sparkles, CheckCircle, Layers, Layout, GripVertical, Plus, Trash2 } from 'lucide-react';
 
 const TEMPLATES = [
   { name: 'modern', label: 'Modern Indigo' },
@@ -13,9 +13,91 @@ const TEMPLATES = [
   { name: 'creative', label: 'Creative Purple' }
 ];
 
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+interface ExperienceItem {
+  _id: string;
+  company: string;
+  position: string;
+  start_date?: string;
+  end_date?: string;
+  highlights?: string[];
+  [key: string]: unknown;
+}
+
+interface ProjectItem {
+  _id: string;
+  title: string;
+  description: string;
+  link?: string;
+  highlights?: string[];
+  [key: string]: unknown;
+}
+
+const SortableExperienceItem = ({ id, exp, onUpdate, onRemove }: { id: string; exp: ExperienceItem; onUpdate: (data: ExperienceItem) => void; onRemove: () => void }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  return (
+    <div ref={setNodeRef} style={style} className="p-4 bg-slate-800 border border-slate-700 rounded-xl mb-3 flex gap-3 group">
+      <div {...attributes} {...listeners} className="cursor-grab text-slate-500 hover:text-indigo-400 pt-2">
+        <GripVertical className="w-5 h-5" />
+      </div>
+      <div className="flex-1 space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input type="text" placeholder="Position" value={exp.position || ''} onChange={e => onUpdate({ ...exp, position: e.target.value })} className="w-full px-3 py-1.5 border border-slate-700 rounded-lg bg-slate-900 text-sm text-white" />
+          <input type="text" placeholder="Company" value={exp.company || ''} onChange={e => onUpdate({ ...exp, company: e.target.value })} className="w-full px-3 py-1.5 border border-slate-700 rounded-lg bg-slate-900 text-sm text-white" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input type="text" placeholder="Start Date" value={exp.start_date || ''} onChange={e => onUpdate({ ...exp, start_date: e.target.value })} className="w-full px-3 py-1.5 border border-slate-700 rounded-lg bg-slate-900 text-sm text-white" />
+          <input type="text" placeholder="End Date" value={exp.end_date || ''} onChange={e => onUpdate({ ...exp, end_date: e.target.value })} className="w-full px-3 py-1.5 border border-slate-700 rounded-lg bg-slate-900 text-sm text-white" />
+        </div>
+      </div>
+      <button onClick={onRemove} className="text-slate-500 hover:text-red-400 p-2">
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
+  );
+};
+
+const SortableProjectItem = ({ id, proj, onUpdate, onRemove }: { id: string; proj: ProjectItem; onUpdate: (data: ProjectItem) => void; onRemove: () => void }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  return (
+    <div ref={setNodeRef} style={style} className="p-4 bg-slate-800 border border-slate-700 rounded-xl mb-3 flex gap-3 group">
+      <div {...attributes} {...listeners} className="cursor-grab text-slate-500 hover:text-indigo-400 pt-2">
+        <GripVertical className="w-5 h-5" />
+      </div>
+      <div className="flex-1 space-y-3">
+        <div className="grid grid-cols-1 gap-3">
+          <input type="text" placeholder="Project Title" value={proj.title || ''} onChange={e => onUpdate({ ...proj, title: e.target.value })} className="w-full px-3 py-1.5 border border-slate-700 rounded-lg bg-slate-900 text-sm text-white" />
+          <textarea placeholder="Description" rows={2} value={proj.description || ''} onChange={e => onUpdate({ ...proj, description: e.target.value })} className="w-full px-3 py-1.5 border border-slate-700 rounded-lg bg-slate-900 text-sm text-white" />
+        </div>
+      </div>
+      <button onClick={onRemove} className="text-slate-500 hover:text-red-400 p-2">
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
+  );
+};
 export default function ResumeBuilderPage() {
-  const [resumes, setResumes] = useState<any[]>([]);
-  const [activeResume, setActiveResume] = useState<any>(null);
+  const [resumes, setResumes] = useState<unknown[]>([]);
+  const [activeResume, setActiveResume] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -28,9 +110,16 @@ export default function ResumeBuilderPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [experience, setExperience] = useState<ExperienceItem[]>([]);
+  const [projects, setProjects] = useState<ProjectItem[]>([]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   // ATS Review State
-  const [atsReview, setAtsReview] = useState<any>(null);
+  const [atsReview, setAtsReview] = useState<Record<string, unknown> | null>(null);
   const [reviewingAts, setReviewingAts] = useState(false);
   const [targetRole, setTargetRole] = useState('fullstack');
 
@@ -38,13 +127,13 @@ export default function ResumeBuilderPage() {
     fetchResumes();
   }, []);
 
-  const fetchResumes = async () => {
+  async function fetchResumes() {
     try {
       const res = await api.get('/resumes/me');
       const list = res.data;
       setResumes(list);
 
-      const active = list.find((r: any) => r.is_active) || list[0];
+      const active = list.find((r: Record<string, unknown>) => r.is_active) || list[0];
       if (active) {
         loadResumeIntoState(active);
       }
@@ -55,15 +144,23 @@ export default function ResumeBuilderPage() {
     }
   };
 
-  const loadResumeIntoState = (r: any) => {
+  const loadResumeIntoState = (r: Record<string, unknown>) => {
     setActiveResume(r);
     setTitle(r.title);
-    setTemplateName(r.template_name || 'modern');
-    setSummary(r.content?.summary || '');
-    setSkillsInput(r.content?.skills ? r.content.skills.join(', ') : '');
-    setName(r.content?.contact?.name || '');
-    setEmail(r.content?.contact?.email || '');
-    setPhone(r.content?.contact?.phone || '');
+    setTemplateName((r.template_name as string) || 'modern');
+    const content = r.content as Record<string, unknown> | undefined;
+    setSummary((content?.summary as string) || '');
+    const skills = content?.skills as string[] | undefined;
+    setSkillsInput(skills ? skills.join(', ') : '');
+    const contact = content?.contact as Record<string, unknown> | undefined;
+    setName((contact?.name as string) || '');
+    setEmail((contact?.email as string) || '');
+    setPhone((contact?.phone as string) || '');
+
+    const safeExp = (content?.experience || []) as ExperienceItem[];
+    const safeProj = (content?.projects || []) as ProjectItem[];
+    setExperience(safeExp.map((e, i) => ({ ...e, _id: e._id || `exp-${i}-${Date.now()}` })));
+    setProjects(safeProj.map((p, i) => ({ ...p, _id: p._id || `proj-${i}-${Date.now()}` })));
   };
 
   const handleGenerateFromProfile = async () => {
@@ -96,6 +193,12 @@ export default function ResumeBuilderPage() {
         setPhone(parsed.contact?.phone || phone);
         if (parsed.summary) setSummary(parsed.summary);
         if (parsed.skills) setSkillsInput(parsed.skills.join(', '));
+        if (parsed.experience) {
+          setExperience((parsed.experience as ExperienceItem[]).map((e, i) => ({ ...e, _id: `exp-${i}-${Date.now()}` })));
+        }
+        if (parsed.projects) {
+          setProjects((parsed.projects as ProjectItem[]).map((p, i) => ({ ...p, _id: `proj-${i}-${Date.now()}` })));
+        }
         setMessage('Resume parsed successfully! Review extracted content before saving.');
       } catch (err) {
         console.error(err);
@@ -115,15 +218,15 @@ export default function ResumeBuilderPage() {
         contact: { name, email, phone, location: '', website: '', linkedin: '', github: '' },
         summary,
         skills,
-        experience: activeResume?.content?.experience || [],
-        education: activeResume?.content?.education || [],
-        projects: activeResume?.content?.projects || [],
+        experience: experience.map(e => { const rest = { ...e }; delete rest._id; return rest; }),
+        education: (activeResume?.content as Record<string, unknown>)?.education || [],
+        projects: projects.map(p => { const rest = { ...p }; delete rest._id; return rest; }),
         certifications: []
       }
     };
 
     try {
-      const res = await api.post('/resumes', payload);
+      await api.post('/resumes', payload);
       setMessage('New active resume version saved!');
       fetchResumes();
     } catch (err) {
@@ -131,6 +234,52 @@ export default function ResumeBuilderPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDragEndExp = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setExperience((items) => {
+        const oldIndex = items.findIndex(i => i._id === active.id);
+        const newIndex = items.findIndex(i => i._id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const handleDragEndProj = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setProjects((items) => {
+        const oldIndex = items.findIndex(i => i._id === active.id);
+        const newIndex = items.findIndex(i => i._id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const updateExp = (id: string, updated: ExperienceItem) => {
+    setExperience(prev => prev.map(e => e._id === id ? updated : e));
+  };
+  
+  const removeExp = (id: string) => {
+    setExperience(prev => prev.filter(e => e._id !== id));
+  };
+  
+  const addExp = () => {
+    setExperience([...experience, { _id: `exp-new-${Date.now()}`, company: '', position: '', start_date: '', end_date: '', highlights: [] }]);
+  };
+
+  const updateProj = (id: string, updated: ProjectItem) => {
+    setProjects(prev => prev.map(p => p._id === id ? updated : p));
+  };
+  
+  const removeProj = (id: string) => {
+    setProjects(prev => prev.filter(p => p._id !== id));
+  };
+
+  const addProj = () => {
+    setProjects([...projects, { _id: `proj-new-${Date.now()}`, title: '', description: '', link: '', highlights: [] }]);
   };
 
   const handleRunAtsReview = async () => {
@@ -256,6 +405,42 @@ export default function ResumeBuilderPage() {
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">Skills (comma separated)</label>
                 <input type="text" value={skillsInput} onChange={e => setSkillsInput(e.target.value)} className="w-full px-3 py-2 border border-slate-700 text-white rounded-lg bg-slate-800 text-sm" />
+              </div>
+
+              {/* Experience Section */}
+              <div className="pt-4 border-t border-slate-800">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-bold text-white">Work Experience</h3>
+                  <button type="button" onClick={addExp} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                    <Plus className="w-3 h-3" /> Add Experience
+                  </button>
+                </div>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndExp}>
+                  <SortableContext items={experience.map(e => e._id)} strategy={verticalListSortingStrategy}>
+                    {experience.map(exp => (
+                      <SortableExperienceItem key={exp._id} id={exp._id} exp={exp} onUpdate={(d) => updateExp(exp._id, d)} onRemove={() => removeExp(exp._id)} />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+                {experience.length === 0 && <p className="text-xs text-slate-500 italic">No experience added yet.</p>}
+              </div>
+
+              {/* Projects Section */}
+              <div className="pt-4 border-t border-slate-800">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-bold text-white">Projects</h3>
+                  <button type="button" onClick={addProj} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                    <Plus className="w-3 h-3" /> Add Project
+                  </button>
+                </div>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndProj}>
+                  <SortableContext items={projects.map(p => p._id)} strategy={verticalListSortingStrategy}>
+                    {projects.map(proj => (
+                      <SortableProjectItem key={proj._id} id={proj._id} proj={proj} onUpdate={(d) => updateProj(proj._id, d)} onRemove={() => removeProj(proj._id)} />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+                {projects.length === 0 && <p className="text-xs text-slate-500 italic">No projects added yet.</p>}
               </div>
 
               <div className="flex justify-end pt-2">

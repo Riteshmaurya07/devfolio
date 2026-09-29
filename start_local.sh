@@ -27,7 +27,7 @@ step() { echo -e "${CYAN}→${NC} $1"; }
 hr() { echo -e "${DIM}----------------------------------------------------------------------${NC}"; }
 
 compose() {
-    docker-compose -f docker-compose.yml "$@"
+    docker compose -f docker-compose.yml "$@"
 }
 
 # ── Configuration ─────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ EOF
 # ── Pre-flight checks ─────────────────────────────────────────────────
 check_prereq() {
     command -v docker >/dev/null 2>&1 || fail "Docker not found" "Install Docker Desktop"
-    command -v docker-compose >/dev/null 2>&1 || fail "docker-compose not found" "Install Docker Compose"
+    command -v docker compose >/dev/null 2>&1 || fail "docker compose not found" "Install Docker Compose"
     docker info >/dev/null 2>&1 || fail "Docker daemon not running" "Start Docker Desktop"
     ok "Docker and Compose are ready"
 }
@@ -146,7 +146,7 @@ cmd_migrate() {
     # First, always try to apply existing migrations (e.g., files pulled from other branches)
     if ! compose exec -T backend alembic upgrade head; then
         warn "Failed to apply migrations! You may have multiple heads due to a branch merge."
-        warn "To fix this manually: 'docker-compose exec backend alembic merge heads' then run this script again."
+        warn "To fix this manually: 'docker compose exec backend alembic merge heads' then run this script again."
         return
     fi
     ok "Existing migrations applied."
