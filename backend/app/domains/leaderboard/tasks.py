@@ -24,9 +24,25 @@ def recompute_leaderboard_rankings_task():
 
             # Derive metrics across modules
             # 1. Coding stats
-            cf_res = db.execute(text("SELECT rating, solved_count FROM codeforces_stats WHERE profile_id = :pid"), {"pid": pid}).fetchone()
-            solved_count = cf_res.solved_count if cf_res else 0
-            rating = cf_res.rating if cf_res else 0
+            cf_res = db.execute(text("""
+                SELECT cs.rating, cs.total_solved 
+                FROM codeforces_stats cs
+                JOIN coding_profiles cp ON cs.coding_profile_id = cp.id
+                WHERE cp.profile_id = :pid
+            """), {"pid": pid}).fetchone()
+
+            lc_res = db.execute(text("""
+                SELECT ls.total_solved 
+                FROM leetcode_stats ls
+                JOIN coding_profiles cp ON ls.coding_profile_id = cp.id
+                WHERE cp.profile_id = :pid
+            """), {"pid": pid}).fetchone()
+
+            cf_solved = cf_res.total_solved if (cf_res and cf_res.total_solved) else 0
+            lc_solved = lc_res.total_solved if (lc_res and lc_res.total_solved) else 0
+
+            solved_count = cf_solved + lc_solved
+            rating = cf_res.rating if (cf_res and cf_res.rating) else 0
 
             # 2. GitHub commits & stars
             gh_res = db.execute(text("SELECT contribution_calendar FROM github_accounts WHERE profile_id = :pid"), {"pid": pid}).fetchone()
@@ -34,12 +50,28 @@ def recompute_leaderboard_rankings_task():
             if gh_res and gh_res.contribution_calendar:
                 total_commits = sum((gh_res.contribution_calendar or {}).values())
 
-            stars_res = db.execute(text("SELECT COALESCE(SUM(stars_count), 0) as stars FROM repositories WHERE profile_id = :pid"), {"pid": pid}).fetchone()
+            stars_res = db.execute(text("""
+                SELECT COALESCE(SUM(r.stars_count), 0) as stars 
+                FROM repositories r 
+                JOIN github_accounts ga ON r.github_account_id = ga.id 
+                WHERE ga.profile_id = :pid
+            """), {"pid": pid}).fetchone()
             total_stars = stars_res.stars if stars_res else 0
 
             # 3. Roadmap completion
-            rm_res = db.execute(text("SELECT completion_percentage FROM roadmap_progress WHERE profile_id = :pid"), {"pid": pid}).fetchone()
-            roadmap_pct = rm_res.completion_percentage if rm_res else 0.0
+            rm_res = db.execute(text("""
+                SELECT rp.milestone_states, jsonb_array_length(rt.milestones) as total_milestones
+                FROM roadmap_progress rp
+                JOIN roadmap_templates rt ON rp.roadmap_template_id = rt.id
+                WHERE rp.profile_id = :pid
+            """), {"pid": pid}).fetchone()
+            
+            roadmap_pct = 0.0
+            if rm_res:
+                states = rm_res.milestone_states or {}
+                total = rm_res.total_milestones or 0
+                completed = sum(1 for v in states.values() if v is True)
+                roadmap_pct = (completed / total * 100.0) if total > 0 else 0.0
 
             # 4. Views & projects
             view_res = db.execute(text("SELECT COUNT(*) as views FROM analytics_events WHERE profile_id = :pid"), {"pid": pid}).fetchone()
@@ -68,7 +100,7 @@ def recompute_leaderboard_rankings_task():
             # Upsert leaderboard_entries
             upsert_q = text("""
                 INSERT INTO leaderboard_entries (id, profile_id, rank, total_score, coding_score, contribution_score, roadmap_score, portfolio_score, score_breakdown, updated_at)
-                VALUES (gen_random_uuid(), :pid, :rank, :total, :coding, :contrib, :roadmap, :portfolio, :breakdown::jsonb, NOW())
+                VALUES (gen_random_uuid(), :pid, :rank, :total, :coding, :contrib, :roadmap, :portfolio, CAST(:breakdown AS jsonb), NOW())
                 ON CONFLICT (profile_id) DO UPDATE SET
                     rank = EXCLUDED.rank,
                     total_score = EXCLUDED.total_score,
