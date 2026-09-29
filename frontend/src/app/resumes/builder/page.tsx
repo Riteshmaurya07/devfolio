@@ -97,7 +97,7 @@ const SortableProjectItem = ({ id, proj, onUpdate, onRemove }: { id: string; pro
 };
 export default function ResumeBuilderPage() {
   const [resumes, setResumes] = useState<unknown[]>([]);
-  const [activeResume, setActiveResume] = useState<Record<string, unknown> | null>(null);
+  const [activeResume, setActiveResume] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -119,7 +119,7 @@ export default function ResumeBuilderPage() {
   );
 
   // ATS Review State
-  const [atsReview, setAtsReview] = useState<Record<string, unknown> | null>(null);
+  const [atsReview, setAtsReview] = useState<Record<string, any> | null>(null);
   const [reviewingAts, setReviewingAts] = useState(false);
   const [targetRole, setTargetRole] = useState('fullstack');
 
@@ -133,7 +133,7 @@ export default function ResumeBuilderPage() {
       const list = res.data;
       setResumes(list);
 
-      const active = list.find((r: Record<string, unknown>) => r.is_active) || list[0];
+      const active = list.find((r: Record<string, any>) => r.is_active) || list[0];
       if (active) {
         loadResumeIntoState(active);
       }
@@ -144,15 +144,15 @@ export default function ResumeBuilderPage() {
     }
   };
 
-  const loadResumeIntoState = (r: Record<string, unknown>) => {
+  const loadResumeIntoState = (r: Record<string, any>) => {
     setActiveResume(r);
     setTitle(r.title);
     setTemplateName((r.template_name as string) || 'modern');
-    const content = r.content as Record<string, unknown> | undefined;
+    const content = r.content as Record<string, any> | undefined;
     setSummary((content?.summary as string) || '');
     const skills = content?.skills as string[] | undefined;
     setSkillsInput(skills ? skills.join(', ') : '');
-    const contact = content?.contact as Record<string, unknown> | undefined;
+    const contact = content?.contact as Record<string, any> | undefined;
     setName((contact?.name as string) || '');
     setEmail((contact?.email as string) || '');
     setPhone((contact?.phone as string) || '');
@@ -218,9 +218,9 @@ export default function ResumeBuilderPage() {
         contact: { name, email, phone, location: '', website: '', linkedin: '', github: '' },
         summary,
         skills,
-        experience: experience.map(e => { const rest = { ...e }; delete rest._id; return rest; }),
-        education: (activeResume?.content as Record<string, unknown>)?.education || [],
-        projects: projects.map(p => { const rest = { ...p }; delete rest._id; return rest; }),
+        experience: experience.map(e => { const rest = { ...e }; delete (rest as any)._id; return rest; }),
+        education: (activeResume?.content as Record<string, any>)?.education || [],
+        projects: projects.map(p => { const rest = { ...p }; delete (rest as any)._id; return rest; }),
         certifications: []
       }
     };
@@ -516,7 +516,7 @@ export default function ResumeBuilderPage() {
               </h2>
 
               <div className="space-y-2">
-                {resumes.map(r => (
+                {resumes.map((r: any) => (
                   <div
                     key={r.id}
                     className={`p-3 rounded-xl border text-xs flex justify-between items-center transition ${r.id === activeResume?.id ? 'bg-slate-800 border-indigo-500' : 'bg-slate-900 border-slate-800'}`}

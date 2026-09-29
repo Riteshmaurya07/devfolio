@@ -1,33 +1,65 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export default function proxy(request: NextRequest) {
-  // Check if we have an auth-storage cookie or local storage equivalent 
-  // However, local storage is not accessible in middleware.
-  // Next.js middleware relies on cookies. If the backend doesn't set a cookie,
-  // we might have to rely on client-side protection or a session cookie.
-  // Assuming 'auth-storage' state contains token, but Zustand persist uses localStorage by default.
-  // If we can't read localStorage here, we should just let the client side redirect,
-  // or we need to update login to also set a cookie for middleware to read.
+// Define public routes that don't require authentication
+const publicRoutes = ['/login', '/register', '/'];
+const authRoutes = ['/login', '/register'];
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login');
+export default function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
   
-  // A robust check requires a cookie. For now, we will add basic client-side protection
-  // in a layout or wrapper, but since the plan asked for middleware, I'll provide a placeholder
-  // that checks a 'token' cookie, and later we can ensure a cookie is set if needed.
+  // Skip middleware for static files, api routes, and next internals
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.includes('.')
+  ) {
+    return NextResponse.next();
+  }
+
   const token = request.cookies.get('token')?.value;
 
-  if (!token && !isAuthPage) {
+  // 1. Unauthenticated users trying to access protected routes
+  if (!token && !publicRoutes.includes(pathname)) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  if (token && isAuthPage) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  // 2. Authenticated users
+  if (token) {
+    try {
+      // Decode JWT payload (Edge runtime compatible)
+      const payloadBase64 = token.split('.')[1];
+      const payloadString = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
+      const payload = JSON.parse(payloadString);
+      
+      const isOnboarded = payload.is_onboarded === true;
+
+      // 2a. Logged in users shouldn't access auth pages
+      if (authRoutes.includes(pathname)) {
+        return NextResponse.redirect(new URL(isOnboarded ? '/dashboard' : '/onboarding', request.url));
+      }
+
+      // 2b. Force onboarding
+      if (!isOnboarded && pathname !== '/onboarding') {
+        return NextResponse.redirect(new URL('/onboarding', request.url));
+      }
+
+      // 2c. Fully onboarded users shouldn't access onboarding again
+      if (isOnboarded && pathname === '/onboarding') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+
+    } catch (e) {
+      // If token is invalid, clear it and redirect to login
+      const response = NextResponse.redirect(new URL('/login', request.url));
+      response.cookies.delete('token');
+      return response;
+    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/resumes/:path*', '/roadmaps/:path*', '/ai/:path*', '/login'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
