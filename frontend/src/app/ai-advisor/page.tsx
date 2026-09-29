@@ -104,7 +104,14 @@ export default function AICareerAdvisorPage() {
             if (token === '[STREAM_INTERRUPTED]') {
               tempAssistantMsg.status = 'interrupted';
             } else {
-              assistantText += token;
+              let parsedText = token;
+              try {
+                const parsed = JSON.parse(token);
+                if (parsed.text !== undefined) parsedText = parsed.text;
+              } catch (e) {
+                // Ignore, use raw token
+              }
+              assistantText += parsedText;
               setMessages(prev =>
                 prev.map(m => (m.id === tempAssistantMsg.id ? { ...m, content: assistantText } : m))
               );

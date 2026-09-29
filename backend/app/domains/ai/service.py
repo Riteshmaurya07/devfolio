@@ -86,48 +86,65 @@ class AIService:
         accumulated = ""
         status = "complete"
 
+        history_msgs = await self.repository.get_messages(conversation_id)
+        contents = []
+        for msg in history_msgs:
+            role = "model" if msg.role == "assistant" else "user"
+            contents.append({
+                "role": role,
+                "parts": [{"text": msg.content}]
+            })
+
         try:
             import json
             from app.core.config import settings
             import httpx
             
-            full_prompt = f"{system_prompt}\n\nContext:\n{json.dumps(fresh_context)}\n\nUser: {user_message}"
+            system_prompt_with_context = f"{system_prompt}\n\nContext:\n{json.dumps(fresh_context, default=str)}"
             
-            if not settings.GEMINI_API_KEY:
-                yield "data: Error: Gemini API key not configured\n\n"
-                return
+            api_key = settings.GEMINI_API_KEY
+            if not api_key:
+                # Mock fallback
+                full_text = f"[{mode.upper()}] {system_prompt} Analyzed request '{user_message}'. Focus on strengthening your core skills and practicing targeted problems."
+                tokens = full_text.split(" ")
+                for token in tokens:
+                    accumulated += token + " "
+                    yield f"data: {json.dumps({'text': token + ' '})}\n\n"
+                    await asyncio.sleep(0.04)
+            else:
+                payload = {
+                    "contents": contents,
+                    "systemInstruction": {
+                        "parts": [{"text": system_prompt_with_context}]
+                    }
+                }
+                
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key={api_key}"
+                async with httpx.AsyncClient() as client:
+                    async with client.stream("POST", url, json=payload, timeout=30.0) as response:
+                        if response.status_code != 200:
+                            error_msg = f"Error from LLM API: {response.status_code}"
+                            yield f"data: {json.dumps({'text': error_msg})}\n\n"
+                            status = "error"
+                            await self.repository.add_message(conversation_id, "assistant", error_msg, status=status)
+                            return
 
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key={settings.GEMINI_API_KEY}"
-            payload = {
-                "contents": [{"parts": [{"text": full_prompt}]}]
-            }
-
-            async with httpx.AsyncClient() as client:
-                async with client.stream("POST", url, json=payload) as response:
-                    if response.status_code != 200:
-                        yield f"data: Error from Gemini API: {response.status_code}\n\n"
-                        return
-
-                    async for line in response.aiter_lines():
-                        if line.startswith("data: "):
-                            data_str = line[6:]
-                            if data_str == "[DONE]":
-                                continue
-                            try:
-                                chunk_data = json.loads(data_str)
-                                candidates = chunk_data.get("candidates", [])
-                                if candidates:
-                                    parts = candidates[0].get("content", {}).get("parts", [])
-                                    if parts:
-                                        text = parts[0].get("text", "")
-                                        if text:
-                                            accumulated += text
-                                            # Yield proper SSE for multiline
-                                            for chunk_line in text.split('\n'):
-                                                yield f"data: {chunk_line}\n"
-                                            yield "\n"
-                            except json.JSONDecodeError:
-                                pass
+                        async for line in response.aiter_lines():
+                            if line.startswith("data: "):
+                                data_str = line[6:]
+                                if data_str == "[DONE]":
+                                    continue
+                                try:
+                                    chunk = json.loads(data_str)
+                                    if "candidates" in chunk and len(chunk["candidates"]) > 0:
+                                        parts = chunk["candidates"][0].get("content", {}).get("parts", [])
+                                        for part in parts:
+                                            text = part.get("text", "")
+                                            if text:
+                                                accumulated += text
+                                                yield f"data: {json.dumps({'text': text})}\n\n"
+                                except json.JSONDecodeError:
+                                    pass
         except Exception as e:
             status = "interrupted"
             yield "data: [STREAM_INTERRUPTED]\n\n"
