@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, Response, Request, HTTPException
-from app.domains.users.schemas import UserCreate, UserResponse, LoginRequest, TokenResponse, UserOnboardingRequest
+from app.domains.users.schemas import UserCreate, UserResponse, LoginRequest, TokenResponse, UserOnboardingRequest, ForgotPasswordRequest, ResetPasswordRequest
 from app.domains.users.service import AuthService
 from app.domains.users.models import User
 from app.api.dependencies import get_auth_service, get_current_user
@@ -216,3 +216,19 @@ async def logout(response: Response):
         samesite="lax"
     )
     return {"message": "Logged out successfully"}
+
+@router.post("/forgot-password")
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    await auth_service.forgot_password(request.email)
+    return {"message": "If that email is registered, a password reset token has been generated. Check logs."}
+
+@router.post("/reset-password")
+async def reset_password(
+    request: ResetPasswordRequest,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    await auth_service.reset_password(request.token, request.new_password)
+    return {"message": "Password has been reset successfully"}

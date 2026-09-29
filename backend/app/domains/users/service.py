@@ -3,6 +3,7 @@ from typing import Optional, List, Tuple
 from uuid import UUID
 import jwt
 import bcrypt
+import logging
 from app.domains.users.repository import UserRepository
 from app.domains.users.schemas import UserCreate, LoginRequest, UserResponse
 from app.domains.users.models import User
@@ -62,3 +63,42 @@ class AuthService:
         user.preferences = current_prefs
         
         return await self.user_repo.update(user)
+
+    async def forgot_password(self, email: str) -> None:
+        user = await self.user_repo.get_by_email(email)
+        if not user:
+            # For security reasons, don't indicate that the user doesn't exist
+            logging.info(f"Password reset requested for non-existent email: {email}")
+            return
+
+        # Generate reset token (valid for 15 minutes)
+        reset_token = self.create_access_token(
+            data={"sub": str(user.id), "type": "reset_password"},
+            expires_delta=timedelta(minutes=15)
+        )
+
+        # In a real app, send an email here.
+        logging.info(f"Password reset token for {email}: {reset_token}")
+
+    async def reset_password(self, token: str, new_password: str) -> None:
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            user_id_str = payload.get("sub")
+            token_type = payload.get("type")
+            
+            if not user_id_str or token_type != "reset_password":
+                raise UnauthorizedError(message="Invalid or expired reset token")
+                
+            user_id = UUID(user_id_str)
+        except (jwt.ExpiredSignatureError, jwt.PyJWTError, ValueError):
+            raise UnauthorizedError(message="Invalid or expired reset token")
+            
+        user = await self.user_repo.get_by_id(user_id)
+        if not user:
+            raise NotFoundError(message="User not found")
+            
+        salt = bcrypt.gensalt()
+        hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), salt).decode('utf-8')
+        
+        user.hashed_password = hashed_password
+        await self.user_repo.update(user)
