@@ -86,21 +86,9 @@ class CodingDashboardService:
         if not cp:
             raise NotFoundError(message=f"Platform '{platform}' is not connected.")
 
-        # Check if existing stats exist
-        existing_stats = None
-        if cp.platform == "leetcode":
-            existing_stats = await self.repository.get_leetcode_stats(cp.id)
-        elif cp.platform == "codeforces":
-            existing_stats = await self.repository.get_codeforces_stats(cp.id)
-        elif cp.platform == "codechef":
-            existing_stats = await self.repository.get_codechef_stats(cp.id)
-        elif cp.platform == "geeksforgeeks":
-            existing_stats = await self.repository.get_geeksforgeeks_stats(cp.id)
-
-        # Cooldown guard: only apply if stats already exist and sync was within cooldown window
-        if existing_stats and cp.last_synced_at and (datetime.utcnow() - cp.last_synced_at) < timedelta(seconds=SYNC_COOLDOWN_SECONDS):
-            remaining = SYNC_COOLDOWN_SECONDS - int((datetime.utcnow() - cp.last_synced_at).total_seconds())
-            raise ValidationError(message=f"Sync on cooldown. Please wait {remaining} seconds before syncing again.")
+        # Debounce rapid consecutive clicks within 3 seconds
+        if cp.last_synced_at and (datetime.utcnow() - cp.last_synced_at) < timedelta(seconds=3):
+            return cp
 
         # Execute sync
         await self.sync_platform_stats(cp)

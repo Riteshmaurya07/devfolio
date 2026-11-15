@@ -209,7 +209,7 @@ function ProfileEditContent() {
       const platRes = await api.get('/platforms/profiles');
       setCodingProfiles(platRes.data || []);
     } catch (err: any) {
-      toast.error(`Failed to sync ${platformName}`);
+      toast.error(err.response?.data?.detail || `Failed to sync ${platformName}`);
     } finally {
       setSyncingPlatform(null);
     }
