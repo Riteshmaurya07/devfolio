@@ -6,6 +6,8 @@ from app.domains.platforms.repository import CodingProfileRepository
 from app.domains.platforms.models import CodingProfile
 from app.domains.platforms.clients.codeforces import CodeforcesClient
 from app.domains.platforms.clients.leetcode import LeetCodeClient
+from app.domains.platforms.clients.codechef import CodeChefClient
+from app.domains.platforms.clients.geeksforgeeks import GeeksforGeeksClient
 from app.domains.platforms.weak_area_detector import detect_weak_areas
 from app.domains.ai.service import AIService
 from app.core.exceptions import ValidationError, NotFoundError
@@ -19,6 +21,8 @@ class CodingDashboardService:
         self.repository = repository
         self.codeforces_client = CodeforcesClient()
         self.leetcode_client = LeetCodeClient()
+        self.codechef_client = CodeChefClient()
+        self.gfg_client = GeeksforGeeksClient()
 
     async def sync_platform_stats(self, cp: CodingProfile) -> None:
         """Fetches latest external statistics and upserts into database."""
@@ -29,6 +33,12 @@ class CodingDashboardService:
             elif cp.platform == "codeforces":
                 stats_data = await self.codeforces_client.fetch_user_info(cp.external_username)
                 await self.repository.upsert_codeforces_stats(cp.id, stats_data)
+            elif cp.platform == "codechef":
+                stats_data = await self.codechef_client.fetch_user_info(cp.external_username)
+                await self.repository.upsert_codechef_stats(cp.id, stats_data)
+            elif cp.platform == "geeksforgeeks":
+                stats_data = await self.gfg_client.fetch_user_info(cp.external_username)
+                await self.repository.upsert_geeksforgeeks_stats(cp.id, stats_data)
             
             cp.sync_status = "ok"
             cp.sync_error_message = None
@@ -54,6 +64,14 @@ class CodingDashboardService:
             valid = await self.leetcode_client.verify_username(external_username)
             if not valid:
                 raise ValidationError(message=f"LeetCode user '{external_username}' not found.")
+        elif platform == "codechef":
+            valid = await self.codechef_client.verify_username(external_username)
+            if not valid:
+                raise ValidationError(message=f"CodeChef user '{external_username}' not found.")
+        elif platform == "geeksforgeeks":
+            valid = await self.gfg_client.verify_username(external_username)
+            if not valid:
+                raise ValidationError(message=f"GeeksforGeeks user '{external_username}' not found.")
 
         # 2. Upsert profile linkage
         cp = await self.repository.upsert_coding_profile(profile_id, platform, external_username)
@@ -74,6 +92,10 @@ class CodingDashboardService:
             existing_stats = await self.repository.get_leetcode_stats(cp.id)
         elif cp.platform == "codeforces":
             existing_stats = await self.repository.get_codeforces_stats(cp.id)
+        elif cp.platform == "codechef":
+            existing_stats = await self.repository.get_codechef_stats(cp.id)
+        elif cp.platform == "geeksforgeeks":
+            existing_stats = await self.repository.get_geeksforgeeks_stats(cp.id)
 
         # Cooldown guard: only apply if stats already exist and sync was within cooldown window
         if existing_stats and cp.last_synced_at and (datetime.utcnow() - cp.last_synced_at) < timedelta(seconds=SYNC_COOLDOWN_SECONDS):
@@ -100,6 +122,8 @@ class CodingDashboardService:
                 stats = await self.repository.get_leetcode_stats(cp.id)
             elif cp.platform == "codechef":
                 stats = await self.repository.get_codechef_stats(cp.id)
+            elif cp.platform == "geeksforgeeks":
+                stats = await self.repository.get_geeksforgeeks_stats(cp.id)
             
             # If cp has no stats yet but is connected, attempt an inline sync
             if not stats and cp.external_username:
@@ -108,10 +132,14 @@ class CodingDashboardService:
                     stats = await self.repository.get_leetcode_stats(cp.id)
                 elif cp.platform == "codeforces":
                     stats = await self.repository.get_codeforces_stats(cp.id)
+                elif cp.platform == "codechef":
+                    stats = await self.repository.get_codechef_stats(cp.id)
+                elif cp.platform == "geeksforgeeks":
+                    stats = await self.repository.get_geeksforgeeks_stats(cp.id)
 
             stats_dict = None
             if stats:
-                total_solved += getattr(stats, "total_solved", 0)
+                total_solved += getattr(stats, "total_solved", 0) or 0
                 
                 if hasattr(stats, "topic_analysis") and isinstance(stats.topic_analysis, dict):
                     for topic, topic_data in stats.topic_analysis.items():
@@ -143,6 +171,19 @@ class CodingDashboardService:
                         "max_rating": stats.max_rating,
                         "rank": stats.rank,
                         "max_rank": stats.max_rank,
+                    }
+                elif cp.platform == "codechef":
+                    stats_dict = {
+                        "total_solved": stats.total_solved,
+                        "current_rating": stats.current_rating,
+                        "highest_rating": stats.highest_rating,
+                        "stars": stats.stars,
+                    }
+                elif cp.platform == "geeksforgeeks":
+                    stats_dict = {
+                        "total_solved": stats.total_solved,
+                        "coding_score": stats.coding_score,
+                        "institute_rank": stats.institute_rank,
                     }
 
             enriched_profiles.append({

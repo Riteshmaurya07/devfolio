@@ -549,6 +549,16 @@ export default function PublicProfilePage() {
                             #{stats.ranking.toLocaleString()}
                           </span>
                         )}
+                        {stats?.stars && (
+                          <span className="text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                            {stats.stars}
+                          </span>
+                        )}
+                        {stats?.rank && stats.rank !== 'unrated' && (
+                          <span className="text-[10px] capitalize font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-full">
+                            {stats.rank}
+                          </span>
+                        )}
                       </div>
                       <span className="text-[10px] text-emerald-400 font-medium px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
                         Synced
@@ -604,6 +614,42 @@ export default function PublicProfilePage() {
                           <span>Rank:</span>
                           <span className="text-amber-400 capitalize">{stats.rank || 'Unrated'}</span>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Breakdown for CodeChef */}
+                    {stats && cp.platform === 'codechef' && (
+                      <div className="space-y-1.5 pt-2 border-t border-slate-800/80 text-xs">
+                        <div className="flex justify-between text-slate-400">
+                          <span>Current Rating:</span>
+                          <span className="text-white font-bold">{stats.current_rating || 0}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                          <span>Highest Rating:</span>
+                          <span className="text-indigo-300 font-medium">{stats.highest_rating || 0}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                          <span>Division / Stars:</span>
+                          <span className="text-amber-400 font-semibold">{stats.stars || '1★'}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Breakdown for GeeksforGeeks */}
+                    {stats && cp.platform === 'geeksforgeeks' && (
+                      <div className="space-y-1.5 pt-2 border-t border-slate-800/80 text-xs">
+                        {stats.coding_score !== undefined && (
+                          <div className="flex justify-between text-slate-400">
+                            <span>Coding Score:</span>
+                            <span className="text-white font-bold">{stats.coding_score}</span>
+                          </div>
+                        )}
+                        {stats.institute_rank && (
+                          <div className="flex justify-between text-slate-400">
+                            <span>Institute Rank:</span>
+                            <span className="text-indigo-300 font-medium">{stats.institute_rank}</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

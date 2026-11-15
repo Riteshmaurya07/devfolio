@@ -167,6 +167,19 @@ export default function CodingDashboardPage() {
                             Rating: <span className="font-bold text-white">{connected.stats.rating}</span> ({connected.stats.rank})
                           </div>
                         )}
+                        {connected.platform === 'codechef' && connected.stats.current_rating !== undefined && (
+                          <div className="text-xs text-slate-300 mt-1">
+                            Rating: <span className="font-bold text-white">{connected.stats.current_rating}</span> ({connected.stats.stars || '1★'})
+                          </div>
+                        )}
+                        {connected.platform === 'geeksforgeeks' && connected.stats.coding_score !== undefined && (
+                          <div className="text-xs text-slate-300 mt-1">
+                            Score: <span className="font-bold text-white">{connected.stats.coding_score}</span>
+                            {connected.stats.institute_rank && (
+                              <span className="text-slate-400 ml-1">({connected.stats.institute_rank})</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
