@@ -31,7 +31,14 @@ function ProfileEditContent() {
     if (tabParam === 'integrations' || tabParam === 'socials' || tabParam === 'general') {
       setActiveTab(tabParam);
     }
-  }, [tabParam]);
+    const githubParam = searchParams.get('github');
+    const errorParam = searchParams.get('error');
+    if (githubParam === 'connected') {
+      toast.success('GitHub account connected and synced successfully!');
+    } else if (errorParam) {
+      toast.error(`GitHub connection notice: ${errorParam}`);
+    }
+  }, [tabParam, searchParams]);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -215,14 +222,32 @@ function ProfileEditContent() {
     }
   };
 
+  const [syncingGithub, setSyncingGithub] = useState(false);
+
   const handleConnectGitHub = async () => {
     try {
       const res = await api.get('/github/auth/url');
       if (res.data?.url) {
         window.location.href = res.data.url;
       }
-    } catch (err) {
-      toast.error('GitHub integration requires client configuration');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'GitHub integration requires client configuration');
+    }
+  };
+
+  const handleSyncGitHub = async () => {
+    try {
+      setSyncingGithub(true);
+      await api.post('/github/sync');
+      toast.success('GitHub data synchronized successfully!');
+      if (profile?.username) {
+        const ghRes = await api.get('/github/stats/' + profile.username);
+        setGithubAccount(ghRes.data);
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to sync GitHub account');
+    } finally {
+      setSyncingGithub(false);
     }
   };
 
@@ -575,29 +600,63 @@ function ProfileEditContent() {
 
             {/* GitHub OAuth Connection */}
             <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-sm">
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div>
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 text-indigo-400" /> GitHub Repository Sync
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Connect your GitHub account to sync commit contribution heatmaps and calculate repository health scores.
+                  <p className="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
+                    Connect your GitHub account to sync commit contribution heatmaps, star metrics, and calculate repository health scores for your public developer profile.
                   </p>
                 </div>
                 {githubAccount ? (
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    Connected as @{githubAccount.github_username}
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <a
+                      href={`https://github.com/${githubAccount.github_username}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition flex items-center gap-1.5"
+                    >
+                      @{githubAccount.github_username}
+                      <ExternalLink size={12} />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleSyncGitHub}
+                      disabled={syncingGithub}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-1.5 disabled:opacity-50"
+                      title="Sync latest GitHub data"
+                    >
+                      <RefreshCw size={13} className={syncingGithub ? 'animate-spin' : ''} />
+                      <span>{syncingGithub ? 'Syncing...' : 'Sync Now'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConnectGitHub}
+                      className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition"
+                      title="Reconnect GitHub account"
+                    >
+                      Reconnect
+                    </button>
+                  </div>
                 ) : (
                   <button
                     type="button"
                     onClick={handleConnectGitHub}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-md transition flex items-center gap-2"
                   >
-                    Connect GitHub
+                    <span>Connect GitHub</span>
                   </button>
                 )}
               </div>
+
+              {githubAccount && (
+                <div className="pt-2 border-t border-slate-800/80 flex items-center gap-4 text-xs text-slate-400">
+                  <span>★ <strong className="text-white font-medium">{githubAccount.total_stars ?? 0}</strong> stars</span>
+                  <span>📁 <strong className="text-white font-medium">{githubAccount.repositories?.length ?? 0}</strong> synced repos</span>
+                  <span>👥 <strong className="text-white font-medium">{githubAccount.total_followers ?? 0}</strong> followers</span>
+                </div>
+              )}
             </div>
           </div>
         )}

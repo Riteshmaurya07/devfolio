@@ -176,6 +176,9 @@ The system leverages **Celery and Redis** to decouple notifications from the mai
 *   **Public Profiles & Integrations Hub (Module 2 & 3):**
     *   `GET /api/profiles/u/{username}` - Public developer profile data
     *   `GET /api/platforms/u/{username}` - Public aggregated competitive coding metrics across LeetCode, Codeforces, CodeChef, and GeeksforGeeks
+    *   `GET /api/github/auth/url` - Generates signed HMAC-SHA256 OAuth authorization URL for GitHub profile integration
+    *   `GET /api/github/auth/callback` - Browser OAuth callback handler; verifies HMAC CSRF state, exchanges code for token, triggers GraphQL contribution heatmap and repository sync, and redirects to `/profile/edit?tab=integrations&github=connected` (with bidirectional fallback routing to `/api/users/github/callback`)
+    *   `POST /api/github/sync` - Manual GitHub data sync with debounce guard
     *   `GET /api/github/stats/{username}` - Public GitHub sync stats & repositories
     *   `GET /api/profiles/me` & `PUT /api/profiles/me` - Profile customization & optional social links
     *   `GET /api/platforms/profiles` & `POST /api/platforms/connect` - Multi-platform competitive coding handles with immediate sync and background Celery scheduler

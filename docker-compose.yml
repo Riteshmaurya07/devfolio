@@ -72,6 +72,12 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://devfolio_user:devfolio_password@db:5432/devfolio_db}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api}
+      - SECRET_KEY=${SECRET_KEY:-supersecretkey_change_in_production}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy
@@ -101,6 +107,12 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://devfolio_user:devfolio_password@db:5432/devfolio_db}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api}
+      - SECRET_KEY=${SECRET_KEY:-supersecretkey_change_in_production}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy
@@ -136,6 +148,12 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://devfolio_user:devfolio_password@db:5432/devfolio_db}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api}
+      - SECRET_KEY=${SECRET_KEY:-supersecretkey_change_in_production}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     depends_on:
       - celery-worker
     command: sh -c "mkdir -p /var/log/app && celery -A app.core.celery_app beat --loglevel=info 2>&1 | tee -a /var/log/app/celery-beat.log"

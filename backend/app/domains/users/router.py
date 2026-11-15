@@ -130,6 +130,10 @@ async def github_callback(
     oauth_state = request.cookies.get("oauth_state")
     state = request.query_params.get("state")
     
+    # If this request originated from the profile integration flow
+    if state and ":" in state:
+        return RedirectResponse(f"/api/github/auth/callback?code={code}&state={state}")
+
     if not oauth_state or not state or oauth_state != state:
         raise HTTPException(status_code=400, detail="Invalid state parameter")
 

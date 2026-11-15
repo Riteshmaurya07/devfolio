@@ -1,5 +1,9 @@
 from fastapi import APIRouter, Depends, status, Request
+from fastapi.responses import RedirectResponse
+from typing import Optional
+import logging
 from app.domains.users.models import User
+from app.domains.users.repository import UserRepository
 from app.api.dependencies import get_current_user
 from app.domains.github.schemas import GitHubAccountResponse, AIReviewResponse, AIReviewRequest
 from app.domains.github.repository import GitHubRepository
@@ -7,7 +11,10 @@ from app.domains.github.service import GitHubService
 from app.domains.profiles.repository import ProfileRepository
 from app.domains.ai.service import AIService
 from app.core.database import get_db
+from app.core.config import settings
 from app.core.exceptions import NotFoundError, DomainException
+
+logger = logging.getLogger("devfolio.github")
 
 router = APIRouter(prefix="/github", tags=["github"])
 
@@ -26,23 +33,53 @@ async def get_oauth_url(
 
 @router.get("/auth/callback")
 async def oauth_callback(
-    code: str,
-    state: str,
-    current_user: User = Depends(get_current_user),
+    code: Optional[str] = None,
+    state: Optional[str] = None,
+    error: Optional[str] = None,
+    error_description: Optional[str] = None,
+    request: Request = None,
     service: GitHubService = Depends(get_github_service),
     db = Depends(get_db)
 ):
-    if not service.verify_oauth_state(state, current_user.id):
-        raise DomainException(message="Invalid CSRF state parameter in OAuth callback.", status_code=400)
+    if error:
+        logger.warning(f"GitHub OAuth error returned: {error} - {error_description}")
+        return RedirectResponse(f"{settings.FRONTEND_URL}/profile/edit?tab=integrations&error={error}")
 
-    token = await service.exchange_code_for_token(code)
+    if not code or not state:
+        return RedirectResponse(f"{settings.FRONTEND_URL}/profile/edit?tab=integrations&error=missing_code_or_state")
+
+    # If this request originated from the login flow (state saved in cookie)
+    cookie_oauth_state = request.cookies.get("oauth_state") if request else None
+    if cookie_oauth_state and cookie_oauth_state == state:
+        return RedirectResponse(f"/api/users/github/callback?code={code}&state={state}")
+
+    user_id = service.extract_and_verify_user_id(state)
+    if not user_id:
+        return RedirectResponse(f"{settings.FRONTEND_URL}/profile/edit?tab=integrations&error=invalid_state")
+
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_id(user_id)
+    if not user:
+        return RedirectResponse(f"{settings.FRONTEND_URL}/profile/edit?tab=integrations&error=user_not_found")
+
+    try:
+        token = await service.exchange_code_for_token(code)
+    except Exception as e:
+        logger.error(f"GitHub token exchange failed: {e}")
+        return RedirectResponse(f"{settings.FRONTEND_URL}/profile/edit?tab=integrations&error=exchange_failed")
+
     profile_repo = ProfileRepository(db)
-    profile = await profile_repo.get_by_user_id(current_user.id)
+    profile = await profile_repo.get_by_user_id(user.id)
     if not profile:
-        raise NotFoundError(message="User profile not found")
+        return RedirectResponse(f"{settings.FRONTEND_URL}/profile/edit?tab=integrations&error=profile_not_found")
 
-    account = await service.sync_github(profile.id, token)
-    return account
+    try:
+        await service.sync_github(profile.id, token)
+    except Exception as e:
+        logger.error(f"GitHub initial sync error: {e}")
+        return RedirectResponse(f"{settings.FRONTEND_URL}/profile/edit?tab=integrations&error=sync_failed")
+
+    return RedirectResponse(f"{settings.FRONTEND_URL}/profile/edit?tab=integrations&github=connected")
 
 @router.post("/sync", response_model=GitHubAccountResponse)
 async def manual_sync(
