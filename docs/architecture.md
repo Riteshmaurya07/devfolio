@@ -4,7 +4,15 @@ This document defines the complete architectural overhaul required to transition
 
 ## 1. Technology Stack
 
-*   **Frontend:** Next.js (React) with Tailwind CSS (located in `frontend/` directory)
+*   **Frontend:** Next.js (React) with Tailwind CSS v4 (located in `frontend/` directory)
+    *   *Design System:* Editorial calm aesthetic designed for dashboard visualization using the 60-30-10 palette rule:
+        *   **60% Canvas:** Warm Cream (`#f3eee3`) in Light Mode / Deep Black (`#111111`) in Dark Mode
+        *   **30% Structure & Typography:** Deep Black (`#111111`) in Light Mode / Warm Soft Cream (`#f3eee3`) in Dark Mode
+        *   **10% Accent:** Burnt Orange (`#d9541e`) and terracotta shades for active tabs, primary actions, and metrics
+    *   *Geometry:* Architectural, slightly rounded corners (`rounded-md` 6px, `rounded-lg` 8px) avoiding oversized or sci-fi pill shapes.
+    *   *Theme Engine:* System & manual Light/Dark mode with zero-flicker SSR hydration script and persistent `useThemeStore` + `ThemeToggle`.
+    *   *Global Component Suite:* Centralized reusable components in `frontend/src/components/ui/` (`Button`, `Card`, `Badge`, `Input`, `Textarea`, `Select`, `StatCard`, `ThemeToggle`, `Tabs`, `Modal`, `EmptyState`, `Icons` including `GithubIcon` & `GoogleIcon`).
+    *   *Unified Page Coverage:* 100% of routes follow the calm editorial system (`/`, `/login`, `/register`, `/dashboard`, `/coding-dashboard`, `/leaderboard`, `/roadmaps`, `/ai-advisor`, `/job-tracker`, `/analytics-dashboard`, `/portfolio/builder`, `/resumes`, `/resumes/builder`, `/feed`, `/settings/notifications`, `/admin`, `/p/[slug]`).
 *   **Backend:** FastAPI (Python) (located in `backend/` directory)
 *   **Database:** PostgreSQL
 *   **Background Jobs & Notifications:** Celery (Worker + Beat) with Redis
@@ -104,17 +112,16 @@ erDiagram
         datetime created_at
     }
 
-    RESUMES {
-        uuid id PK
-        uuid user_id FK
-        string title
-    }
-
     RESUME_VERSIONS {
         uuid id PK
-        uuid resume_id FK
-        jsonb resume_data
+        uuid profile_id FK
+        string title
+        int version_number
+        boolean is_active
+        string template_name
+        jsonb content
         datetime created_at
+        datetime updated_at
     }
 
     ROADMAPS {
@@ -153,9 +160,13 @@ The system leverages **Celery and Redis** to decouple notifications from the mai
 ## 5. API Design (FastAPI Routes)
 
 *   **Auth & Users:** 
-    *   `POST /api/auth/register` & `POST /api/auth/login`
-    *   `GET /api/auth/github` & `GET /api/auth/github/callback`
-    *   `GET /api/users/me` & `GET /api/users/{username}`
+    *   `POST /api/users/register` - Standard registration (Name/Username, Email, Password). Direct onboarding bypass directly to dashboard.
+    *   `POST /api/users/login` - Standard login (Email, Password) with JWT and Refresh Token issuing.
+    *   `GET /api/users/me` - Authenticated user details including `is_admin`, `is_suspended`, and preferences.
+    *   `GET /api/users/github/login` & `GET /api/users/github/callback` - OAuth integration for GitHub.
+    *   `POST /api/users/logout` - Session invalidation and cookie clearing.
+    *   **Frontend Routing Interlock:** Unauthenticated visitors land on `/` (Marketing/Landing page). Authenticated standard users are routed directly to `/dashboard`. Authenticated administrators (`is_admin === true`) are automatically routed to `/admin`.
+    *   **Automatic Account Bootstrapping (Startup Seed):** On startup, the backend automatically ensures both an administrator (`admin@devfolio.com` / `password123`) and a standard developer account (`user@devfolio.com` / `password123`) exist with hashed credentials.
 *   **Notifications:**
     *   `GET /api/notifications` - Get all user notifications.
     *   `PUT /api/notifications/{id}/read` - Mark a notification as read.
@@ -169,6 +180,40 @@ The system leverages **Celery and Redis** to decouple notifications from the mai
     *   `GET /api/platforms/analytics`
 *   **AI Advisor:**
     *   `GET /api/ai/chats` & `POST /api/ai/chats` & `POST /api/ai/chats/{chat_id}/message`
+*   **Developer Scoring Engine & Leaderboard:**
+    *   `GET /api/leaderboard/global` - Cursor-paginated global leaderboard rankings with total and component scores.
+    *   `GET /api/leaderboard/me` - Authenticated user rank, total Developer Score, 4-dimension normalized scores, and raw metric breakdowns with on-demand fallback recomputation.
+    *   `GET /api/leaderboard/badges` - Irrevocable permanent merit badges (`problem_solver_100`, `github_star_master`, `roadmap_hero`).
+    *   **Scoring Formula (0–100 Scale):**
+        *   `Coding Score (35% Weight)`: $\min(100, (\text{problems\_solved} \times 0.5) + (\max(0, \text{rating} - 1000) \times 0.05))$ across LeetCode, Codeforces, CodeChef, and GeeksforGeeks.
+        *   `Contribution Score (25% Weight)`: $\min(100, (\text{total\_commits} \times 0.1) + (\text{total\_stars} \times 2.0))$ from GitHub contribution calendar and repository stars.
+        *   `Roadmap Score (20% Weight)`: $\min(100, (\text{completed\_milestones} / \text{total\_milestones}) \times 100)$.
+        *   `Portfolio Score (20% Weight)`: $\min(100, (\text{total\_views} \times 0.5) + (\text{project\_count} \times 10.0))$.
+        *   `Total Developer Score`: $\text{Coding} \times 0.35 + \text{Contribution} \times 0.25 + \text{Roadmap} \times 0.20 + \text{Portfolio} \times 0.20$.
+*   **Analytics & Telemetry Engine (Module 11):**
+    *   `POST /api/analytics/events` - Ingest page views, downloads, and click-throughs with 5-minute sliding IP window deduplication and SHA-256 privacy hashing.
+    *   `GET /api/analytics/dashboard/summary` - Aggregated live telemetry containing 7-day chronological daily rollups, 24-hour activity heatmaps, conversion rates (visitor-to-download and visitor-to-github), and acquisition referrers.
+    *   `GET /api/platforms/dashboard/me` - Multi-platform competitive coding intelligence with total problems solved, topic analysis, submission heatmap, and difficulty distributions.
+*   **Resume Builder & Document Engine (Module 4):**
+    *   `GET /api/resumes/me` - List all versioned resumes for authenticated user's profile with harmonized schema.
+    *   `GET /api/resumes/{resume_id}` - Retrieve single resume version with dual compatibility schema (`content` and `resume_data`).
+    *   `POST /api/resumes` - Create new resume version with atomic single-transaction activation swap.
+    *   `PUT /api/resumes/{resume_id}` - Update title and resume content/data with bidirectional harmonization (`basics` <-> `contact`, `position` <-> `title`).
+    *   `POST /api/resumes/{version_id}/activate` - Set resume version as active for profile.
+    *   `GET /api/resumes/{version_id}/export/pdf` - High-fidelity PDF generation with ReportLab across modern/minimal/corporate templates.
+    *   `GET /api/resumes/{version_id}/export/docx` - Formatted Microsoft Word DOCX generation with python-docx.
+    *   `POST /api/resumes/{version_id}/review-ats` - ATS score calculation and keyword analysis.
+    *   `POST /api/resumes/generate-from-profile` - Pre-fill resume content from unified profile, projects, and synced handles.
+    *   `POST /api/resumes/upload-and-parse` - Extract resume JSON from uploaded PDF/DOCX.
+*   **Public Profiles & Integrations Hub (Module 2 & 3):**
+    *   `GET /api/profiles/u/{username}` - Public developer profile data
+    *   `GET /api/platforms/u/{username}` - Public aggregated competitive coding metrics across LeetCode, Codeforces, CodeChef, and GeeksforGeeks
+    *   `GET /api/github/auth/url` - Generates signed HMAC-SHA256 OAuth authorization URL for GitHub profile integration
+    *   `GET /api/github/auth/callback` - Browser OAuth callback handler; verifies HMAC CSRF state, exchanges code for token, triggers GraphQL contribution heatmap and repository sync, and redirects to `/profile/edit?tab=integrations&github=connected` (with bidirectional fallback routing to `/api/users/github/callback`)
+    *   `POST /api/github/sync` - Manual GitHub data sync with debounce guard
+    *   `GET /api/github/stats/{username}` - Public GitHub sync stats & repositories
+    *   `GET /api/profiles/me` & `PUT /api/profiles/me` - Profile customization & optional social links
+    *   `GET /api/platforms/profiles` & `POST /api/platforms/connect` - Multi-platform competitive coding handles with immediate sync and background Celery scheduler
 *   **Feed & Social Platform (Module 10):**
     *   `GET /api/feed` - Composite-cursor paginated feed (own + followed users' posts)
     *   `POST /api/feed/posts` - Create post (rate-limited: 10/hour, content max 5000 chars)

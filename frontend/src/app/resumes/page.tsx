@@ -5,6 +5,8 @@ import Link from 'next/link';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { Plus, FileText, ArrowRight } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, Button } from '@/components/ui';
 
 export default function ResumesPage() {
   const [resumes, setResumes] = useState<any[]>([]);
@@ -39,8 +41,8 @@ export default function ResumesPage() {
           experience: [],
           education: [],
           projects: [],
-          certifications: []
-        }
+          certifications: [],
+        },
       });
       toast.success('Resume created successfully');
       fetchResumes();
@@ -54,52 +56,92 @@ export default function ResumesPage() {
 
   return (
     <DashboardShell>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Resumes</h1>
-        <button 
-          onClick={createNewResume}
-          disabled={isCreating}
-          className={`bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition ${isCreating ? 'opacity-70 cursor-not-allowed' : ''}`}
-        >
-          {isCreating ? 'Creating...' : '+ Create New'}
-        </button>
-      </div>
+      <div className="max-w-7xl mx-auto space-y-8 pb-16">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[var(--border-subtle)]">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                Resume Directory
+              </h1>
+              <Badge variant="burnt" size="sm">
+                JSON & PDF
+              </Badge>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
+              Manage multi-version developer resumes, customize templates, and download verified PDFs.
+            </p>
+          </div>
 
-      {loading ? (
-        <div className="text-gray-500">Loading resumes...</div>
-      ) : resumes.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm text-center border border-dashed border-gray-300 dark:border-gray-700">
-          <p className="text-gray-500 mb-4">You haven't created any resumes yet.</p>
-          <button 
-            onClick={createNewResume}
-            disabled={isCreating}
-            className="text-indigo-600 hover:text-indigo-700 font-medium"
-          >
-            {isCreating ? 'Creating...' : 'Create your first resume'}
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {resumes.map(r => (
-            <Link href={`/resumes/${r.id}`} key={r.id}>
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-indigo-300 transition cursor-pointer h-full flex flex-col justify-between">
-                <div>
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white">{r.title}</h3>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Last updated: {new Date(r.updated_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="mt-4 flex justify-between items-center">
-                  <span className="text-xs font-medium px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded">
-                    Version history saved
-                  </span>
-                  <span className="text-sm text-indigo-600 hover:underline">Edit</span>
-                </div>
-              </div>
+          <div className="flex items-center gap-2.5">
+            <Link href="/resumes/builder">
+              <Button variant="secondary" size="sm">
+                Advanced Builder
+              </Button>
             </Link>
-          ))}
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={createNewResume}
+              isLoading={isCreating}
+              leftIcon={<Plus size={14} />}
+            >
+              Create New
+            </Button>
+          </div>
         </div>
-      )}
+
+        {loading ? (
+          <div className="py-12 text-center text-xs text-[var(--text-muted)]">
+            Loading resumes...
+          </div>
+        ) : resumes.length === 0 ? (
+          <div className="p-8 rounded-lg bg-[var(--surface)] text-center border border-dashed border-[var(--border-subtle)]">
+            <p className="text-xs text-[var(--text-secondary)] mb-4">
+              You haven&apos;t created any resumes yet.
+            </p>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={createNewResume}
+              isLoading={isCreating}
+            >
+              Create your first resume
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {resumes.map((r) => (
+              <Link href={`/resumes/${r.id}`} key={r.id} className="group">
+                <Card className="p-6 h-full flex flex-col justify-between hover:border-[var(--border-strong)] transition-all">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase">
+                        Version {r.version_number || 1}
+                      </span>
+                      {r.is_active && (
+                        <Badge variant="success" size="sm">
+                          Active
+                        </Badge>
+                      )}
+                    </div>
+                    <h3 className="font-bold text-base text-[var(--text-primary)] group-hover:text-[#d9541e] transition-colors">
+                      {r.title}
+                    </h3>
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      Updated: {new Date(r.updated_at || r.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] flex justify-between items-center text-xs text-[#d9541e] font-semibold">
+                    <span>Edit Document</span>
+                    <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </DashboardShell>
   );
 }

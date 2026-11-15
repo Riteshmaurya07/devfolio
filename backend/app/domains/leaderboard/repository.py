@@ -2,8 +2,10 @@ from typing import Optional, List, Tuple
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import joinedload
 from sqlalchemy import text
 from app.domains.leaderboard.models import LeaderboardEntry, Badge, UserBadge
+from app.domains.profiles.models import Profile
 
 class LeaderboardRepository:
     def __init__(self, db: AsyncSession):
@@ -14,6 +16,7 @@ class LeaderboardRepository:
         # Deterministic secondary rank sort: total_score DESC, updated_at ASC, profile_id ASC
         res = await self.db.execute(
             select(LeaderboardEntry)
+            .options(joinedload(LeaderboardEntry.profile))
             .order_by(LeaderboardEntry.total_score.desc(), LeaderboardEntry.updated_at.asc(), LeaderboardEntry.profile_id.asc())
             .offset(offset)
             .limit(page_size)

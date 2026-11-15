@@ -30,11 +30,13 @@ class ResumeRepository:
         )
         return res.scalars().first()
 
-    async def update_version(self, version_id: UUID, title: str, content: dict) -> Optional[ResumeVersion]:
+    async def update_version(self, version_id: UUID, title: Optional[str] = None, content: Optional[dict] = None) -> Optional[ResumeVersion]:
         version = await self.get_by_id(version_id)
         if version:
-            version.title = title
-            version.content = content
+            if title is not None:
+                version.title = title
+            if content is not None:
+                version.content = content
             await self.db.commit()
             await self.db.refresh(version)
         return version

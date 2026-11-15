@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 import httpx
+from sqlalchemy.future import select
+from app.domains.profiles.models import Profile
 from app.domains.github.repository import GitHubRepository
 from app.domains.github.client import GitHubClient
 from app.domains.github.health_score import calculate_repo_health_score
@@ -33,14 +35,31 @@ class GitHubService:
         except Exception:
             return False
 
+    def extract_and_verify_user_id(self, state: str) -> Optional[UUID]:
+        try:
+            if not state or ":" not in state:
+                return None
+            user_id_str, _ = state.split(":", 1)
+            user_id = UUID(user_id_str)
+            if self.verify_oauth_state(state, user_id):
+                return user_id
+        except Exception:
+            return None
+        return None
+
     def get_oauth_url(self, user_id: UUID) -> str:
-        client_id = getattr(settings, "GITHUB_CLIENT_ID", "dummy_github_client_id")
+        client_id = getattr(settings, "GITHUB_CLIENT_ID", "").strip()
+        if not client_id or client_id in ("dummy_github_client_id", "your_github_client_id_here"):
+            raise DomainException(
+                message="GitHub OAuth is not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in your .env file.",
+                status_code=400
+            )
         state = self.generate_oauth_state(user_id)
         return f"https://github.com/login/oauth/authorize?client_id={client_id}&scope=read:user,repo&state={state}"
 
     async def exchange_code_for_token(self, code: str) -> str:
-        client_id = getattr(settings, "GITHUB_CLIENT_ID", "dummy_github_client_id")
-        client_secret = getattr(settings, "GITHUB_CLIENT_SECRET", "dummy_github_client_secret")
+        client_id = getattr(settings, "GITHUB_CLIENT_ID", "").strip()
+        client_secret = getattr(settings, "GITHUB_CLIENT_SECRET", "").strip()
 
         async with httpx.AsyncClient() as client:
             res = await client.post(
@@ -51,21 +70,19 @@ class GitHubService:
             )
             data = res.json()
             if "access_token" not in data:
-                return f"gho_mock_token_{code}"
+                error_msg = data.get("error_description", data.get("error", "GitHub authorization failed or code expired"))
+                raise DomainException(message=f"GitHub OAuth error: {error_msg}", status_code=400)
             return data["access_token"]
 
     async def sync_github(self, profile_id: UUID, access_token: str, is_manual: bool = False) -> GitHubAccount:
         account = await self.repository.get_by_profile_id(profile_id)
         
-        # 15-Minute Manual Sync Cooldown Guard
+        # Debounce rapid manual syncs to protect GitHub rate limits
         if is_manual and account and account.updated_at:
-            now = datetime.utcnow()
-            if (now - account.updated_at) < timedelta(minutes=15):
-                remaining_seconds = 900 - int((now - account.updated_at).total_seconds())
-                raise DomainException(
-                    message=f"Manual sync on cooldown. Please wait {remaining_seconds // 60} minutes and {remaining_seconds % 60} seconds.",
-                    status_code=429
-                )
+            now = datetime.now(timezone.utc)
+            updated_at = account.updated_at if account.updated_at.tzinfo else account.updated_at.replace(tzinfo=timezone.utc)
+            if (now - updated_at).total_seconds() < 15:
+                return account
 
         client = GitHubClient(access_token)
         gh_user = await client.get_user_profile()
@@ -111,9 +128,11 @@ class GitHubService:
                 "last_commit_at": last_commit
             })
 
-        calendar = {
-            datetime.now().strftime("%Y-%m-%d"): len(gh_repos)
-        }
+        calendar = await client.get_contribution_calendar(username)
+        if not calendar:
+            calendar = {
+                datetime.now(timezone.utc).strftime("%Y-%m-%d"): len(gh_repos)
+            }
 
         account = await self.repository.save_account(
             profile_id=profile_id,
@@ -130,8 +149,16 @@ class GitHubService:
         await self.repository.replace_repositories(account.id, repos_data)
         return await self.repository.get_by_profile_id(profile_id)
 
-    async def get_stats_by_username(self, username: str) -> GitHubAccount:
+    async def get_stats_by_username(self, username: str) -> Optional[GitHubAccount]:
         account = await self.repository.get_by_username(username)
+        if not account:
+            # Also check if profile_id matches a profile with this Devfolio username
+            res = await self.repository.db.execute(
+                select(Profile).where(Profile.username == username)
+            )
+            profile = res.scalars().first()
+            if profile:
+                account = await self.repository.get_by_profile_id(profile.id)
         if not account:
             raise NotFoundError(message=f"GitHub account for @{username} not connected")
         return account

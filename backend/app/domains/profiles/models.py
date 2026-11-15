@@ -5,6 +5,7 @@ from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, Enum
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from app.domains.users.models import User
 
 class VisibilityEnum(str, enum.Enum):
     PUBLIC = "public"

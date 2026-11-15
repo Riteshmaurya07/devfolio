@@ -12,7 +12,9 @@ export default function proxy(request: NextRequest) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
-    pathname.includes('.')
+    pathname.includes('.') ||
+    pathname.startsWith('/p/') || // public shared portfolio
+    pathname.startsWith('/u/')    // public user profile
   ) {
     return NextResponse.next();
   }
@@ -31,21 +33,24 @@ export default function proxy(request: NextRequest) {
       const payloadBase64 = token.split('.')[1];
       const payloadString = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
       const payload = JSON.parse(payloadString);
-      
-      const isOnboarded = payload.is_onboarded === true;
 
-      // 2a. Logged in users shouldn't access auth pages
+      // Check if user is suspended
+      if (payload.is_suspended) {
+        const response = NextResponse.redirect(new URL('/login', request.url));
+        response.cookies.delete('token');
+        return response;
+      }
+
+      // 2a. Logged in users shouldn't access auth pages (login/register)
       if (authRoutes.includes(pathname)) {
-        return NextResponse.redirect(new URL(isOnboarded ? '/dashboard' : '/onboarding', request.url));
+        if (payload.is_admin) {
+          return NextResponse.redirect(new URL('/admin', request.url));
+        }
+        return NextResponse.redirect(new URL('/dashboard', request.url));
       }
 
-      // 2b. Force onboarding
-      if (!isOnboarded && pathname !== '/onboarding') {
-        return NextResponse.redirect(new URL('/onboarding', request.url));
-      }
-
-      // 2c. Fully onboarded users shouldn't access onboarding again
-      if (isOnboarded && pathname === '/onboarding') {
+      // 2b. Non-admin users trying to access admin dashboard directly
+      if (pathname.startsWith('/admin') && !payload.is_admin) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
 

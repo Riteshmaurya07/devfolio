@@ -8,6 +8,7 @@ class LeaderboardEntryResponse(BaseModel):
     profile_id: UUID
     rank: int
     total_score: float
+    developer_score: Optional[float] = None
     coding_score: float
     contribution_score: float
     roadmap_score: float
@@ -15,7 +16,10 @@ class LeaderboardEntryResponse(BaseModel):
     score_breakdown: Dict[str, Any]
     profile_name: Optional[str] = None
     profile_username: Optional[str] = None
+    username: Optional[str] = None
     avatar_url: Optional[str] = None
+    total_problems_solved: Optional[int] = 0
+    current_streak: Optional[int] = 0
 
     model_config = ConfigDict(from_attributes=True)
 

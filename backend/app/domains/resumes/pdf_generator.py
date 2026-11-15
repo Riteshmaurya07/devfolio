@@ -62,8 +62,8 @@ def generate_pdf_bytes(content: dict, template_name: str = "modern") -> bytes:
     story = []
 
     # Header Contact Info
-    contact = content.get("contact", {})
-    story.append(Paragraph(contact.get("name", "Developer Resume"), title_style))
+    contact = content.get("contact") or content.get("basics") or {}
+    story.append(Paragraph(contact.get("name") or "Developer Resume", title_style))
     
     contact_bits = [b for b in [contact.get("email"), contact.get("phone"), contact.get("location"), contact.get("website")] if b]
     if contact_bits:
@@ -72,7 +72,7 @@ def generate_pdf_bytes(content: dict, template_name: str = "modern") -> bytes:
     story.append(HRFlowable(width="100%", thickness=1, color=accent_color, spaceBefore=0, spaceAfter=8))
 
     # Summary
-    summary = content.get("summary")
+    summary = content.get("summary") or (contact.get("summary") if isinstance(contact, dict) else "")
     if summary:
         story.append(Paragraph("SUMMARY", section_heading))
         story.append(Paragraph(summary, body_style))
@@ -90,7 +90,9 @@ def generate_pdf_bytes(content: dict, template_name: str = "modern") -> bytes:
     if experience:
         story.append(Paragraph("WORK EXPERIENCE", section_heading))
         for exp in experience:
-            head = f"<b>{exp.get('position')}</b> — <i>{exp.get('company')}</i> ({exp.get('start_date')} - {exp.get('end_date', 'Present')})"
+            pos = exp.get("position") or exp.get("title") or "Role"
+            comp = exp.get("company") or "Company"
+            head = f"<b>{pos}</b> — <i>{comp}</i> ({exp.get('start_date', '')} - {exp.get('end_date', 'Present')})"
             story.append(Paragraph(head, body_style))
             for h in exp.get("highlights", []):
                 story.append(Paragraph(f"• {h}", body_style))

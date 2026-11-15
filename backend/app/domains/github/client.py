@@ -72,3 +72,47 @@ class GitHubClient:
             return None
         except Exception:
             return None
+
+    async def get_contribution_calendar(self, username: str) -> Dict[str, int]:
+        query = """
+        query($username: String!) {
+          user(login: $username) {
+            contributionsCollection {
+              contributionCalendar {
+                weeks {
+                  contributionDays {
+                    date
+                    contributionCount
+                  }
+                }
+              }
+            }
+          }
+        }
+        """
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.post(
+                    "https://api.github.com/graphql",
+                    json={"query": query, "variables": {"username": username}},
+                    headers=self.headers,
+                    timeout=10.0
+                )
+                if res.status_code == 200:
+                    data = res.json()
+                    weeks = (
+                        data.get("data", {})
+                        .get("user", {})
+                        .get("contributionsCollection", {})
+                        .get("contributionCalendar", {})
+                        .get("weeks", [])
+                    )
+                    calendar = {}
+                    for w in weeks:
+                        for day in w.get("contributionDays", []):
+                            calendar[day["date"]] = day.get("contributionCount", 0)
+                    if calendar:
+                        return calendar
+        except Exception as e:
+            logger.warning(f"Failed to fetch GitHub GraphQL contribution calendar for {username}: {e}")
+        return {}

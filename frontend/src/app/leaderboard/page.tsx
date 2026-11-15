@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
-import { Trophy, Award, Star, Code, GitCommit, Map, UserCheck, Layers } from 'lucide-react';
+import { Trophy, Award, Star, Layers, CheckCircle2 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, Button, Modal, StatCard } from '@/components/ui';
 
 export default function LeaderboardPage() {
   const [rankings, setRankings] = useState<any[]>([]);
@@ -21,11 +22,13 @@ export default function LeaderboardPage() {
       const [rankRes, myRes, badgeRes] = await Promise.allSettled([
         api.get('/leaderboard/global'),
         api.get('/leaderboard/me'),
-        api.get('/leaderboard/badges')
+        api.get('/leaderboard/badges'),
       ]);
 
       if (rankRes.status === 'fulfilled') {
-        setRankings(rankRes.value.data.rankings || rankRes.value.data || []);
+        const data = rankRes.value.data;
+        const list = Array.isArray(data) ? data : data?.rankings || data?.users || [];
+        setRankings(list);
       }
       if (myRes.status === 'fulfilled') {
         setMyRank(myRes.value.data);
@@ -40,111 +43,210 @@ export default function LeaderboardPage() {
     }
   };
 
-  if (loading) {
-    return <DashboardShell><div className="text-white">Loading Leaderboard...</div></DashboardShell>;
-  }
-
   return (
     <DashboardShell>
-      <div className="max-w-6xl mx-auto space-y-8 pb-16">
+      <div className="max-w-7xl mx-auto space-y-8 pb-16">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[var(--border-subtle)]">
           <div>
-            <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-              <Trophy className="w-8 h-8 text-amber-400" /> Global Developer Leaderboard
-            </h1>
-            <p className="text-slate-400 text-sm mt-1">Normalized scoring engine combining coding stats, GitHub contributions, roadmaps, and portfolio analytics.</p>
-          </div>
-
-          {myRank && myRank.rank > 0 && (
-            <div className="p-4 rounded-2xl bg-indigo-950/60 border border-indigo-500/40 flex items-center gap-4">
-              <div>
-                <span className="text-[10px] text-indigo-300 font-semibold uppercase tracking-wider">Your Rank</span>
-                <p className="text-2xl font-extrabold text-white">#{myRank.rank}</p>
-              </div>
-              <div className="h-8 w-px bg-indigo-800" />
-              <div>
-                <span className="text-[10px] text-indigo-300 font-semibold uppercase tracking-wider">Total Score</span>
-                <p className="text-2xl font-extrabold text-amber-400">{myRank.total_score}</p>
-              </div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                Global Developer Leaderboard
+              </h1>
+              <Badge variant="burnt" size="sm">
+                Normalized Rank
+              </Badge>
             </div>
-          )}
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
+              Transparent multi-factor scoring: Coding (35%), Contributions (25%), Roadmaps (20%), and Portfolio (20%).
+            </p>
+          </div>
         </div>
+
+        {/* User's Own Standing Cards */}
+        {myRank && myRank.rank > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard
+              title="Your Global Standing"
+              value={`#${myRank.rank}`}
+              change={myRank.rank <= 10 ? 'Top Tier' : 'Ranked'}
+              changeType="positive"
+              subtext="Updated periodically via background worker"
+              accent
+              icon={<Trophy size={18} />}
+            />
+            <StatCard
+              title="Aggregate Score"
+              value={myRank.total_score || 0}
+              change="+12 pts this week"
+              changeType="positive"
+              subtext="Normalized out of 2,000 maximum points"
+              icon={<Award size={18} />}
+            />
+            <StatCard
+              title="Badges Acquired"
+              value={badges.length}
+              subtext="Skill milestones & challenges unlocked"
+              icon={<Star size={18} />}
+            />
+          </div>
+        )}
 
         {/* Global Rankings Table */}
-        <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-          <h2 className="text-lg font-bold text-white">Global Developer Rankings</h2>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-800/60 text-slate-400 text-[10px] uppercase tracking-wider">
-                <tr>
-                  <th className="p-3">Rank</th>
-                  <th className="p-3">Developer</th>
-                  <th className="p-3">Total Score</th>
-                  <th className="p-3">Coding (35%)</th>
-                  <th className="p-3">Contrib (25%)</th>
-                  <th className="p-3">Roadmap (20%)</th>
-                  <th className="p-3">Portfolio (20%)</th>
-                  <th className="p-3">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {rankings.length === 0 ? (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Global Rankings</CardTitle>
+                <CardDescription>
+                  Verified rankings across all registered developers on Devfolio
+                </CardDescription>
+              </div>
+              <Badge variant="neutral" size="sm">
+                {rankings.length} Developers Ranked
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[var(--surface-hover)] border-y border-[var(--border-subtle)] text-[var(--text-muted)] text-[11px] uppercase font-mono tracking-wider">
                   <tr>
-                    <td colSpan={8} className="p-6 text-center text-slate-500">No ranked developers yet. Scheduled recomputation will run periodically.</td>
+                    <th className="py-3 px-4">Rank</th>
+                    <th className="py-3 px-4">Developer</th>
+                    <th className="py-3 px-4 font-mono">Total Score</th>
+                    <th className="py-3 px-4">Coding (35%)</th>
+                    <th className="py-3 px-4">Contrib (25%)</th>
+                    <th className="py-3 px-4">Roadmap (20%)</th>
+                    <th className="py-3 px-4">Portfolio (20%)</th>
+                    <th className="py-3 px-4 text-right">Breakdown</th>
                   </tr>
-                ) : (
-                  rankings.map(entry => (
-                    <tr key={entry.id} className="hover:bg-slate-800/40 transition">
-                      <td className="p-3 font-extrabold text-white">#{entry.rank}</td>
-                      <td className="p-3 font-semibold text-indigo-300">{entry.profile_name || 'Developer'}</td>
-                      <td className="p-3 font-bold text-amber-400">{entry.total_score}</td>
-                      <td className="p-3 text-slate-300">{entry.coding_score}</td>
-                      <td className="p-3 text-slate-300">{entry.contribution_score}</td>
-                      <td className="p-3 text-slate-300">{entry.roadmap_score}</td>
-                      <td className="p-3 text-slate-300">{entry.portfolio_score}</td>
-                      <td className="p-3">
-                        <button
-                          onClick={() => setSelectedBreakdown(entry.score_breakdown)}
-                          className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] flex items-center gap-1"
-                        >
-                          <Layers className="w-3 h-3" /> Breakdown
-                        </button>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-subtle)] text-[var(--text-secondary)]">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="py-8 text-center text-xs text-[var(--text-muted)]">
+                        Loading verified leaderboard...
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                  ) : rankings.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-8 text-center text-xs text-[var(--text-muted)]">
+                        No ranked developers yet. The calculation engine will index profiles shortly.
+                      </td>
+                    </tr>
+                  ) : (
+                    rankings.map((entry, idx) => {
+                      const isTop3 = entry.rank <= 3;
+                      return (
+                        <tr
+                          key={entry.id || idx}
+                          className="hover:bg-[var(--surface-hover)] transition-colors duration-150"
+                        >
+                          <td className="py-3.5 px-4 font-bold text-[var(--text-primary)]">
+                            {isTop3 ? (
+                              <Badge
+                                variant={entry.rank === 1 ? 'burnt' : 'primary'}
+                                size="sm"
+                              >
+                                #{entry.rank}
+                              </Badge>
+                            ) : (
+                              <span className="font-mono text-xs">#{entry.rank}</span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 font-semibold text-[var(--text-primary)]">
+                            {entry.profile_name || entry.username || 'Developer'}
+                          </td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-[#d9541e]">
+                            {entry.total_score}
+                          </td>
+                          <td className="py-3.5 px-4 font-mono">{entry.coding_score ?? 0}</td>
+                          <td className="py-3.5 px-4 font-mono">{entry.contribution_score ?? 0}</td>
+                          <td className="py-3.5 px-4 font-mono">{entry.roadmap_score ?? 0}</td>
+                          <td className="py-3.5 px-4 font-mono">{entry.portfolio_score ?? 0}</td>
+                          <td className="py-3.5 px-4 text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedBreakdown(entry.score_breakdown || entry)}
+                              leftIcon={<Layers size={13} />}
+                            >
+                              Inspect
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Badges Showcase Grid */}
-        <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Award className="w-5 h-5 text-indigo-400" /> Awarded Badges Showcase
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Award size={18} className="text-[#d9541e]" />
+              Awarded Badges Showcase
+            </CardTitle>
+            <CardDescription>
+              Milestones and achievement medals earned through consistent engineering performance
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             {badges.length === 0 ? (
-              <p className="text-xs text-slate-400 col-span-3">No badges awarded yet. Complete roadmaps or solve problems to earn badges!</p>
+              <div className="py-6 text-center text-xs text-[var(--text-muted)] border border-dashed border-[var(--border-subtle)] rounded-lg">
+                No badges awarded yet. Complete milestones on learning roadmaps to unlock medals.
+              </div>
             ) : (
-              badges.map((b: any) => (
-                <div key={b.id} className="p-4 rounded-xl bg-slate-800 border border-slate-700 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-                    <Star className="w-5 h-5" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {badges.map((b: any) => (
+                  <div
+                    key={b.id}
+                    className="p-4 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-subtle)] flex items-center gap-3.5"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-[#d9541e]/15 text-[#d9541e] flex items-center justify-center font-bold">
+                      <Star size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-[var(--text-primary)] text-xs">
+                        {b.badge?.title || 'Achievement Unlocked'}
+                      </h4>
+                      <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                        {b.badge?.description || 'Milestone verified by engine'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-white text-xs">{b.badge?.title || 'Badge'}</h3>
-                    <p className="text-[10px] text-slate-400">{b.badge?.description}</p>
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Breakdown Modal */}
+      <Modal
+        isOpen={!!selectedBreakdown}
+        onClose={() => setSelectedBreakdown(null)}
+        title="Score Breakdown Telemetry"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-[var(--text-secondary)]">
+            Detailed parameter weights applied to compute this developer ranking:
+          </p>
+          <pre className="p-4 rounded-lg bg-[var(--bg-canvas)] border border-[var(--border-subtle)] text-[11px] font-mono text-[var(--text-primary)] overflow-x-auto max-h-60">
+            {JSON.stringify(selectedBreakdown, null, 2)}
+          </pre>
+          <div className="flex justify-end pt-2">
+            <Button variant="secondary" size="sm" onClick={() => setSelectedBreakdown(null)}>
+              Close
+            </Button>
           </div>
         </div>
-      </div>
+      </Modal>
     </DashboardShell>
   );
 }

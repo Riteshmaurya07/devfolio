@@ -16,6 +16,8 @@ class UserResponse(UserBase):
     auth_provider: str
     is_email_verified: bool
     is_onboarded: bool
+    is_admin: bool = False
+    is_suspended: bool = False
     preferences: Optional[Dict[str, Any]] = {}
     created_at: datetime
 

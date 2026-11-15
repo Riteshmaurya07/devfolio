@@ -1,20 +1,30 @@
 from app.core.celery_app import celery_app
 import logging
 import asyncio
+import uuid
 from datetime import datetime
 from sqlalchemy.future import select
 from app.core.database import AsyncSessionLocal
-from app.domains.platforms.models import CodingProfile, CodeforcesStats, LeetCodeStats
+from app.domains.users.models import User  # Required for SQLAlchemy relationship registry
+from app.domains.profiles.models import Profile  # Required for SQLAlchemy relationship registry
+from app.domains.platforms.models import CodingProfile, CodeforcesStats, LeetCodeStats, CodeChefStats, GeeksforGeeksStats
 from app.domains.platforms.clients.codeforces import CodeforcesClient
 from app.domains.platforms.clients.leetcode import LeetCodeClient
+from app.domains.platforms.clients.codechef import CodeChefClient
+from app.domains.platforms.clients.geeksforgeeks import GeeksforGeeksClient
 
 logger = logging.getLogger("devfolio.platform_tasks")
 
 async def _sync_codeforces_async(profile_id_str: str):
     async with AsyncSessionLocal() as session:
+        try:
+            pid = uuid.UUID(profile_id_str)
+        except ValueError:
+            pid = profile_id_str
+
         result = await session.execute(
             select(CodingProfile).where(
-                CodingProfile.profile_id == profile_id_str,
+                CodingProfile.profile_id == pid,
                 CodingProfile.platform == "codeforces"
             )
         )
@@ -36,7 +46,8 @@ async def _sync_codeforces_async(profile_id_str: str):
                 session.add(stats)
             
             for k, v in stats_data.items():
-                setattr(stats, k, v)
+                if hasattr(stats, k):
+                    setattr(stats, k, v)
                 
             cp.sync_status = "ok"
             cp.sync_error_message = None
@@ -51,9 +62,14 @@ async def _sync_codeforces_async(profile_id_str: str):
 
 async def _sync_leetcode_async(profile_id_str: str):
     async with AsyncSessionLocal() as session:
+        try:
+            pid = uuid.UUID(profile_id_str)
+        except ValueError:
+            pid = profile_id_str
+
         result = await session.execute(
             select(CodingProfile).where(
-                CodingProfile.profile_id == profile_id_str,
+                CodingProfile.profile_id == pid,
                 CodingProfile.platform == "leetcode"
             )
         )
@@ -75,7 +91,8 @@ async def _sync_leetcode_async(profile_id_str: str):
                 session.add(stats)
             
             for k, v in stats_data.items():
-                setattr(stats, k, v)
+                if hasattr(stats, k):
+                    setattr(stats, k, v)
                 
             cp.sync_status = "ok"
             cp.sync_error_message = None
@@ -84,6 +101,96 @@ async def _sync_leetcode_async(profile_id_str: str):
             await session.commit()
         except Exception as e:
             logger.error(f"Error syncing LeetCode: {e}")
+            cp.sync_status = "error"
+            cp.sync_error_message = str(e)
+            await session.commit()
+
+async def _sync_codechef_async(profile_id_str: str):
+    async with AsyncSessionLocal() as session:
+        try:
+            pid = uuid.UUID(profile_id_str)
+        except ValueError:
+            pid = profile_id_str
+
+        result = await session.execute(
+            select(CodingProfile).where(
+                CodingProfile.profile_id == pid,
+                CodingProfile.platform == "codechef"
+            )
+        )
+        cp = result.scalars().first()
+        if not cp:
+            logger.warning(f"CodingProfile not found for {profile_id_str} (codechef)")
+            return
+
+        try:
+            client = CodeChefClient()
+            stats_data = await client.fetch_user_info(cp.external_username)
+            
+            stats_result = await session.execute(
+                select(CodeChefStats).where(CodeChefStats.coding_profile_id == cp.id)
+            )
+            stats = stats_result.scalars().first()
+            if not stats:
+                stats = CodeChefStats(coding_profile_id=cp.id)
+                session.add(stats)
+            
+            for k, v in stats_data.items():
+                if hasattr(stats, k):
+                    setattr(stats, k, v)
+                
+            cp.sync_status = "ok"
+            cp.sync_error_message = None
+            cp.last_synced_at = datetime.utcnow()
+            
+            await session.commit()
+        except Exception as e:
+            logger.error(f"Error syncing CodeChef: {e}")
+            cp.sync_status = "error"
+            cp.sync_error_message = str(e)
+            await session.commit()
+
+async def _sync_geeksforgeeks_async(profile_id_str: str):
+    async with AsyncSessionLocal() as session:
+        try:
+            pid = uuid.UUID(profile_id_str)
+        except ValueError:
+            pid = profile_id_str
+
+        result = await session.execute(
+            select(CodingProfile).where(
+                CodingProfile.profile_id == pid,
+                CodingProfile.platform == "geeksforgeeks"
+            )
+        )
+        cp = result.scalars().first()
+        if not cp:
+            logger.warning(f"CodingProfile not found for {profile_id_str} (geeksforgeeks)")
+            return
+
+        try:
+            client = GeeksforGeeksClient()
+            stats_data = await client.fetch_user_info(cp.external_username)
+            
+            stats_result = await session.execute(
+                select(GeeksforGeeksStats).where(GeeksforGeeksStats.coding_profile_id == cp.id)
+            )
+            stats = stats_result.scalars().first()
+            if not stats:
+                stats = GeeksforGeeksStats(coding_profile_id=cp.id)
+                session.add(stats)
+            
+            for k, v in stats_data.items():
+                if hasattr(stats, k):
+                    setattr(stats, k, v)
+                
+            cp.sync_status = "ok"
+            cp.sync_error_message = None
+            cp.last_synced_at = datetime.utcnow()
+            
+            await session.commit()
+        except Exception as e:
+            logger.error(f"Error syncing GeeksforGeeks: {e}")
             cp.sync_status = "error"
             cp.sync_error_message = str(e)
             await session.commit()
@@ -103,4 +210,11 @@ def sync_leetcode_account_task(profile_id: str):
 @celery_app.task(name="sync_codechef_account_task")
 def sync_codechef_account_task(profile_id: str):
     logger.info(f"Executing isolated CodeChef sync for profile_id={profile_id}")
+    asyncio.run(_sync_codechef_async(profile_id))
     return {"status": "ok", "profile_id": profile_id, "platform": "codechef"}
+
+@celery_app.task(name="sync_geeksforgeeks_account_task")
+def sync_geeksforgeeks_account_task(profile_id: str):
+    logger.info(f"Executing isolated GeeksforGeeks sync for profile_id={profile_id}")
+    asyncio.run(_sync_geeksforgeeks_async(profile_id))
+    return {"status": "ok", "profile_id": profile_id, "platform": "geeksforgeeks"}

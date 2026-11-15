@@ -13,7 +13,7 @@ def generate_docx_bytes(content: dict, template_name: str = "modern") -> bytes:
         section.left_margin = Inches(0.5)
         section.right_margin = Inches(0.5)
 
-    contact = content.get("contact", {})
+    contact = content.get("contact") or content.get("basics") or {}
     
     # Title / Name
     name_heading = doc.add_heading(contact.get("name", "Developer Resume"), level=0)
@@ -28,7 +28,7 @@ def generate_docx_bytes(content: dict, template_name: str = "modern") -> bytes:
         cp.style.font.color.rgb = RGBColor(100, 116, 139)
 
     # Summary
-    summary = content.get("summary")
+    summary = content.get("summary") or (contact.get("summary") if isinstance(contact, dict) else "")
     if summary:
         sh = doc.add_heading("SUMMARY", level=1)
         sh.style.font.size = Pt(12)
@@ -47,12 +47,14 @@ def generate_docx_bytes(content: dict, template_name: str = "modern") -> bytes:
         exp_h = doc.add_heading("WORK EXPERIENCE", level=1)
         exp_h.style.font.size = Pt(12)
         for exp in experience:
+            pos = exp.get("position") or exp.get("title") or "Role"
+            comp = exp.get("company") or "Company"
             p = doc.add_paragraph()
-            r1 = p.add_run(f"{exp.get('position')} ")
+            r1 = p.add_run(f"{pos} ")
             r1.bold = True
-            r2 = p.add_run(f"at {exp.get('company')} ")
+            r2 = p.add_run(f"at {comp} ")
             r2.italic = True
-            p.add_run(f"({exp.get('start_date')} - {exp.get('end_date', 'Present')})")
+            p.add_run(f"({exp.get('start_date', '')} - {exp.get('end_date', 'Present')})")
             for h in exp.get("highlights", []):
                 doc.add_paragraph(f"• {h}", style='List Bullet')
 

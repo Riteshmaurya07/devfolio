@@ -4,6 +4,7 @@ from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Float, Uni
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from app.domains.profiles.models import Profile
 
 class CodingProfile(Base):
     __tablename__ = "coding_profiles"
@@ -63,3 +64,13 @@ class CodeChefStats(Base):
     highest_rating = Column(Integer, default=0)
     stars = Column(String(10), default="1★")
     total_solved = Column(Integer, default=0)
+
+class GeeksforGeeksStats(Base):
+    __tablename__ = "geeksforgeeks_stats"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    coding_profile_id = Column(UUID(as_uuid=True), ForeignKey("coding_profiles.id", ondelete="CASCADE"), nullable=False, unique=True)
+    username = Column(String(100), nullable=False)
+    total_solved = Column(Integer, default=0)
+    coding_score = Column(Integer, default=0)
+    institute_rank = Column(String(50), nullable=True)

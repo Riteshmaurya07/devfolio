@@ -1,122 +1,223 @@
-import React from "react";
-import Link from "next/link";
-import { ArrowRight, Code2, Sparkles, Trophy, FileText, Zap, Shield, Globe } from "lucide-react";
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import {
+  Code2,
+  ArrowRight,
+  Sparkles,
+  Trophy,
+  FileText,
+  Globe,
+  Compass,
+  CheckCircle2,
+  TrendingUp,
+} from 'lucide-react';
+import { Button, Badge, Card, ThemeToggle } from '@/components/ui';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Background Glow Overlay */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/3 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl"></div>
-      </div>
-
-      {/* Header / Navbar */}
-      <header className="relative z-10 border-b border-slate-800/80 backdrop-blur-md bg-slate-950/60 sticky top-0">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <Code2 className="w-6 h-6 text-white" />
+    <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col font-sans transition-colors duration-200">
+      {/* Editorial Top Navigation */}
+      <header className="border-b border-[var(--border-subtle)] bg-[var(--surface)]/90 backdrop-blur-md sticky top-0 z-50 transition-colors duration-200">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-lg bg-[#d9541e] text-white flex items-center justify-center font-bold text-sm shadow-sm transition-transform group-hover:scale-105">
+              <Code2 size={18} />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
-              Devfolio OS
-            </span>
-          </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-base tracking-tight text-[var(--text-primary)] leading-tight">
+                Devfolio
+              </span>
+              <span className="text-[10px] uppercase font-mono tracking-wider text-[var(--text-muted)]">
+                Developer OS
+              </span>
+            </div>
+          </Link>
 
-          <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition"
-            >
-              Sign In
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link href="/login">
+              <Button variant="ghost" size="sm">
+                Sign In
+              </Button>
             </Link>
-            <Link
-              href="/login"
-              className="px-5 py-2.5 text-sm font-medium rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 transition duration-200 flex items-center gap-2"
-            >
-              Get Started <ArrowRight className="w-4 h-4" />
+            <Link href="/register">
+              <Button variant="primary" size="sm" rightIcon={<ArrowRight size={14} />}>
+                Get Started
+              </Button>
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Main Hero Section */}
-      <main className="relative z-10 flex-1">
-        <section className="max-w-7xl mx-auto px-6 pt-24 pb-20 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-8">
-            <Sparkles className="w-4 h-4" /> Powered by AI Roadmaps & Multi-Platform Sync
+      {/* Main Content */}
+      <main className="flex-1">
+        {/* Hero Section */}
+        <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#d9541e]/30 bg-[#d9541e]/10 text-[#d9541e] text-xs font-semibold mb-6">
+            <Sparkles size={13} />
+            <span>Built for Modern Software Engineers</span>
           </div>
 
-          <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-tight sm:leading-none">
-            The Ultimate SaaS Platform for <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Developers</span>
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-[var(--text-primary)] max-w-4xl mx-auto leading-tight">
+            Your engineering trajectory,{' '}
+            <span className="text-[#d9541e]">unified & visualized.</span>
           </h1>
 
-          <p className="mt-6 text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Auto-sync your coding statistics, build interactive AI-guided learning roadmaps, craft smart JSON resumes, and compete on global developer leaderboards.
+          <p className="mt-5 text-base sm:text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">
+            Synchronize coding stats across LeetCode, Codeforces, CodeChef & GitHub. Craft verified AI roadmaps, build interactive developer portfolios, and track career progress with calm clarity.
           </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/dashboard"
-              className="w-full sm:w-auto px-8 py-4 text-base font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-600/30 hover:shadow-indigo-500/50 transition-all flex items-center justify-center gap-2"
-            >
-              Go to Dashboard <ArrowRight className="w-5 h-5" />
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href="/register">
+              <Button variant="primary" size="lg" rightIcon={<ArrowRight size={16} />}>
+                Claim Your Developer Profile
+              </Button>
             </Link>
-            <Link
-              href="/login"
-              className="w-full sm:w-auto px-8 py-4 text-base font-semibold rounded-xl border border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-slate-200 transition-all flex items-center justify-center"
-            >
-              Sign In to Account
+            <Link href="/dashboard">
+              <Button variant="secondary" size="lg">
+                Explore Dashboard
+              </Button>
             </Link>
+          </div>
+
+          {/* Interactive Metric Preview Banner */}
+          <div className="mt-14 p-6 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] text-left shadow-sm max-w-4xl mx-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--border-subtle)] mb-5">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#d9541e]" />
+                <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                  Live Dashboard Telemetry
+                </span>
+              </div>
+              <Badge variant="success" size="sm">Active Sync</Badge>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-3.5 rounded-md bg-[var(--surface-hover)] border border-[var(--border-subtle)]">
+                <div className="text-[11px] font-semibold uppercase text-[var(--text-muted)]">Total Solved</div>
+                <div className="text-xl font-bold font-mono text-[var(--text-primary)] mt-1">1,482</div>
+                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">4 Platforms Synced</div>
+              </div>
+
+              <div className="p-3.5 rounded-md bg-[var(--surface-hover)] border border-[var(--border-subtle)]">
+                <div className="text-[11px] font-semibold uppercase text-[var(--text-muted)]">GitHub Repos</div>
+                <div className="text-xl font-bold font-mono text-[var(--text-primary)] mt-1">34</div>
+                <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">★ 280 Stars Total</div>
+              </div>
+
+              <div className="p-3.5 rounded-md bg-[var(--surface-hover)] border border-[var(--border-subtle)]">
+                <div className="text-[11px] font-semibold uppercase text-[var(--text-muted)]">Developer Score</div>
+                <div className="text-xl font-bold font-mono text-[#d9541e] mt-1">1,890</div>
+                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">Top 5% Globally</div>
+              </div>
+
+              <div className="p-3.5 rounded-md bg-[var(--surface-hover)] border border-[var(--border-subtle)]">
+                <div className="text-[11px] font-semibold uppercase text-[var(--text-muted)]">Active Roadmaps</div>
+                <div className="text-xl font-bold font-mono text-[var(--text-primary)] mt-1">3 Tracks</div>
+                <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">78% Milestone Rate</div>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Feature Cards Grid */}
-        <section className="max-w-7xl mx-auto px-6 py-16 border-t border-slate-800/60">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white">Everything You Need to Scale Your Engineering Career</h2>
-            <p className="text-slate-400 mt-2">Unified statistics, automated resumes, and intelligent career growth.</p>
+        {/* Core Pillars Feature Grid */}
+        <section className="max-w-6xl mx-auto px-6 py-16 border-t border-[var(--border-subtle)]">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
+              Architected for Engineering Discipline
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">
+              Every tool you need to substantiate your engineering capability, free from clutter.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="p-8 rounded-2xl bg-slate-900/40 border border-slate-800 hover:border-indigo-500/50 transition group">
-              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-6 group-hover:scale-110 transition">
-                <Globe className="w-6 h-6" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="p-6 space-y-3">
+              <div className="w-10 h-10 rounded-lg bg-[#d9541e]/10 text-[#d9541e] flex items-center justify-center font-bold">
+                <Globe size={20} />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Multi-Platform Sync</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Connect your LeetCode, GitHub, and other competitive coding profiles. Automatically aggregate problem counts, streaks, and repository metrics in real time.
+              <h3 className="text-base font-bold text-[var(--text-primary)]">
+                Automated Platform Sync
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                Background workers periodically fetch and verify contest ratings, solved problems, and submission records across LeetCode, CodeChef, Codeforces, and GeeksforGeeks.
               </p>
-            </div>
+            </Card>
 
-            <div className="p-8 rounded-2xl bg-slate-900/40 border border-slate-800 hover:border-purple-500/50 transition group">
-              <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center mb-6 group-hover:scale-110 transition">
-                <Sparkles className="w-6 h-6" />
+            <Card className="p-6 space-y-3">
+              <div className="w-10 h-10 rounded-lg bg-[#d9541e]/10 text-[#d9541e] flex items-center justify-center font-bold">
+                <Compass size={20} />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">AI Learning Roadmaps</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Generate tailored, multi-week step-by-step career path roadmaps using cutting-edge LLM advice designed to elevate your technical stack.
+              <h3 className="text-base font-bold text-[var(--text-primary)]">
+                Curated Skill Roadmaps
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                Step-by-step milestones spanning Backend Systems, Distributed Architecture, Full Stack, and System Design with bookmarking and progress tracking.
               </p>
-            </div>
+            </Card>
 
-            <div className="p-8 rounded-2xl bg-slate-900/40 border border-slate-800 hover:border-blue-500/50 transition group">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center mb-6 group-hover:scale-110 transition">
-                <FileText className="w-6 h-6" />
+            <Card className="p-6 space-y-3">
+              <div className="w-10 h-10 rounded-lg bg-[#d9541e]/10 text-[#d9541e] flex items-center justify-center font-bold">
+                <Trophy size={20} />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Smart Resume Builder</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Build drag-and-drop developer resumes with full JSON version history control. Export pixel-perfect PDFs ready for your next big role.
+              <h3 className="text-base font-bold text-[var(--text-primary)]">
+                Global Normalized Leaderboard
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                Fair, transparent developer rankings powered by our weighted scoring model combining solved problem difficulty, GitHub activity, and roadmap completions.
               </p>
-            </div>
+            </Card>
+
+            <Card className="p-6 space-y-3">
+              <div className="w-10 h-10 rounded-lg bg-[#d9541e]/10 text-[#d9541e] flex items-center justify-center font-bold">
+                <FileText size={20} />
+              </div>
+              <h3 className="text-base font-bold text-[var(--text-primary)]">
+                Smart Resume Builder
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                Version-controlled JSON resume builder with drag-and-drop section ordering, ATS-friendly typography, and one-click PDF generation.
+              </p>
+            </Card>
+
+            <Card className="p-6 space-y-3">
+              <div className="w-10 h-10 rounded-lg bg-[#d9541e]/10 text-[#d9541e] flex items-center justify-center font-bold">
+                <TrendingUp size={20} />
+              </div>
+              <h3 className="text-base font-bold text-[var(--text-primary)]">
+                Job Application Tracker
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                Clean Kanban pipeline to track wishlist, applications, technical interviews, offers, and follow-ups with salary and timeline metadata.
+              </p>
+            </Card>
+
+            <Card className="p-6 space-y-3">
+              <div className="w-10 h-10 rounded-lg bg-[#d9541e]/10 text-[#d9541e] flex items-center justify-center font-bold">
+                <CheckCircle2 size={20} />
+              </div>
+              <h3 className="text-base font-bold text-[var(--text-primary)]">
+                Verified Public Portfolios
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                Shareable custom URL showcasing your verified achievements, pinned repositories, skills graph, and coding journey without third-party fluff.
+              </p>
+            </Card>
           </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-slate-800/80 py-8 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-slate-500">
-          © {new Date().getFullYear()} Devfolio OS. All rights reserved.
+      <footer className="border-t border-[var(--border-subtle)] py-8 bg-[var(--surface)] transition-colors duration-200">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--text-secondary)]">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-[var(--text-primary)]">Devfolio</span>
+            <span>—</span>
+            <span>Calm developer telemetry & career operations.</span>
+          </div>
+          <div>© {new Date().getFullYear()} Devfolio. All rights reserved.</div>
         </div>
       </footer>
     </div>

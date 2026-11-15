@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
-import { Compass, BookOpen, ChevronRight, Layers, Award } from 'lucide-react';
+import { Compass, ChevronRight, BookOpen, Layers } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, Button } from '@/components/ui';
 
 export default function RoadmapsBrowsePage() {
   const [templates, setTemplates] = useState<any[]>([]);
@@ -26,65 +28,99 @@ export default function RoadmapsBrowsePage() {
     }
   };
 
-  const categories = ['All', ...Array.from(new Set(templates.map(t => t.category)))];
+  const categories = ['All', ...Array.from(new Set(templates.map((t) => t.category).filter(Boolean)))];
 
-  const filteredTemplates = selectedCategory === 'All'
-    ? templates
-    : templates.filter(t => t.category === selectedCategory);
-
-  if (loading) {
-    return <DashboardShell><div className="text-white">Loading Learning Roadmaps...</div></DashboardShell>;
-  }
+  const filteredTemplates =
+    selectedCategory === 'All'
+      ? templates
+      : templates.filter((t) => t.category === selectedCategory);
 
   return (
     <DashboardShell>
-      <div className="max-w-6xl mx-auto space-y-8 pb-16">
-        <div>
-          <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-            <Compass className="w-8 h-8 text-indigo-400" /> Learning Roadmaps
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">Structured career paths and skill milestones for modern software engineers.</p>
+      <div className="max-w-7xl mx-auto space-y-8 pb-16">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[var(--border-subtle)]">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                Learning Roadmaps
+              </h1>
+              <Badge variant="burnt" size="sm">
+                Skill Milestones
+              </Badge>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
+              Curated career tracks with structured milestones, practice exercises, and bookmarking.
+            </p>
+          </div>
         </div>
 
         {/* Category Filters */}
         <div className="flex flex-wrap gap-2">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${selectedCategory === cat ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}
-            >
-              {cat}
-            </button>
-          ))}
+          {categories.map((cat) => {
+            const isSelected = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 ${
+                  isSelected
+                    ? 'bg-[#d9541e] text-white shadow-sm'
+                    : 'bg-[var(--surface)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]'
+                }`}
+              >
+                {cat}
+              </button>
+            );
+          })}
         </div>
 
         {/* Templates Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTemplates.map(t => (
-            <a
-              key={t.id}
-              href={`/roadmaps/${t.slug}`}
-              className="group p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition flex flex-col justify-between space-y-4 shadow-xl"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                    {t.category}
-                  </span>
-                  <span className="text-xs text-slate-500 font-mono">{t.milestones?.length || 0} Milestones</span>
-                </div>
-                <h2 className="text-xl font-bold text-white group-hover:text-indigo-400 transition">{t.title}</h2>
-                <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed">{t.description}</p>
-              </div>
+        {loading ? (
+          <div className="py-12 text-center text-xs text-[var(--text-muted)]">
+            Loading curated roadmaps...
+          </div>
+        ) : filteredTemplates.length === 0 ? (
+          <div className="py-12 text-center text-xs text-[var(--text-muted)] border border-dashed border-[var(--border-subtle)] rounded-lg">
+            No roadmaps found for category: {selectedCategory}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTemplates.map((t) => (
+              <Link
+                key={t.id}
+                href={`/roadmaps/${t.slug}`}
+                className="group flex flex-col"
+              >
+                <Card className="h-full flex flex-col justify-between p-6 hover:border-[var(--border-strong)] transition-all duration-150">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="burnt" size="sm">
+                        {t.category || 'General'}
+                      </Badge>
+                      <span className="text-[11px] font-mono text-[var(--text-muted)]">
+                        {t.milestones?.length || 0} Milestones
+                      </span>
+                    </div>
 
-              <div className="flex items-center justify-between text-xs text-indigo-400 font-semibold pt-2 border-t border-slate-800/80">
-                <span>View Roadmap</span>
-                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-              </div>
-            </a>
-          ))}
-        </div>
+                    <h2 className="text-lg font-bold text-[var(--text-primary)] group-hover:text-[#d9541e] transition-colors duration-150">
+                      {t.title}
+                    </h2>
+
+                    <p className="text-xs text-[var(--text-secondary)] line-clamp-3 leading-relaxed">
+                      {t.description}
+                    </p>
+                  </div>
+
+                  <div className="pt-4 mt-4 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs font-semibold text-[#d9541e]">
+                    <span>Inspect Roadmap</span>
+                    <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform duration-150" />
+                  </div>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </DashboardShell>
   );

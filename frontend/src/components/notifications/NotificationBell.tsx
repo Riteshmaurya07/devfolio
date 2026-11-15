@@ -76,53 +76,64 @@ export default function NotificationBell() {
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+        aria-label="View notifications"
+        className="relative p-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center border-2 border-slate-900 shadow-md">
+          <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-sm bg-[#d9541e] text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-4 z-50 space-y-3">
-          <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-            <span className="text-xs font-bold text-white uppercase tracking-wider">Notifications</span>
+        <div className="absolute right-0 mt-2 w-80 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-xl p-4 z-50 space-y-3">
+          <div className="flex justify-between items-center pb-2.5 border-b border-[var(--border-subtle)]">
+            <span className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">
+              Notifications
+            </span>
             {unreadCount > 0 && (
               <button
+                type="button"
                 onClick={handleMarkAllRead}
-                className="text-[10px] text-indigo-400 hover:underline flex items-center gap-1 font-semibold"
+                className="text-[11px] text-[#d9541e] hover:underline flex items-center gap-1 font-semibold cursor-pointer"
               >
-                <CheckCheck className="w-3 h-3" /> Mark all read
+                <CheckCheck className="w-3.5 h-3.5" /> Mark all read
               </button>
             )}
           </div>
 
           <div className="max-h-72 overflow-y-auto space-y-2">
             {notifications.length === 0 ? (
-              <p className="text-xs text-slate-500 py-4 text-center">No notifications yet.</p>
+              <p className="text-xs text-[var(--text-muted)] py-6 text-center">
+                No notifications yet.
+              </p>
             ) : (
               notifications.map((n) => (
                 <div
                   key={n.id}
                   onClick={() => handleMarkAsRead(n.id)}
-                  className={`p-3 rounded-xl border text-xs space-y-1 transition cursor-pointer ${
-                    n.is_read ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-slate-800/80 border-indigo-500/40 text-white font-medium'
+                  className={`p-3 rounded-lg border text-xs space-y-1 transition cursor-pointer ${
+                    n.is_read
+                      ? 'bg-[var(--bg-canvas-subtle)] border-[var(--border-subtle)] text-[var(--text-secondary)]'
+                      : 'bg-[#d9541e]/5 border-[#d9541e]/30 text-[var(--text-primary)] font-medium'
                   }`}
                 >
                   <div className="flex justify-between items-start">
-                    <span className="font-bold text-xs">{n.title}</span>
-                    <span className="text-[9px] text-slate-500">{new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="font-semibold text-xs text-[var(--text-primary)]">{n.title}</span>
+                    <span className="text-[9px] text-[var(--text-muted)] font-mono">
+                      {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
-                  <p className="text-[11px] leading-relaxed text-slate-300">{n.message}</p>
+                  <p className="text-[11px] leading-relaxed text-[var(--text-secondary)]">{n.message}</p>
 
                   {n.payload?.action_url && (
                     <Link
                       href={n.payload.action_url}
-                      className="inline-flex items-center gap-1 text-[10px] text-indigo-400 font-semibold hover:underline pt-1"
+                      className="inline-flex items-center gap-1 text-[10px] text-[#d9541e] font-semibold hover:underline pt-1"
                     >
                       View details <ExternalLink className="w-3 h-3" />
                     </Link>

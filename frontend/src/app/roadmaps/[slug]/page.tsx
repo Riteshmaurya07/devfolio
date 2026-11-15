@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
 import { Compass, CheckCircle2, Circle, Bookmark, Sparkles, Award } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, Button } from '@/components/ui';
 
 export default function RoadmapDetailPage() {
   const params = useParams();
@@ -32,7 +33,6 @@ export default function RoadmapDetailPage() {
           setProgress(match);
           if (match.ai_annotation) setAiAnnotation(match.ai_annotation);
         } else {
-          // Auto-start
           const startRes = await api.post(`/roadmaps/start?template_id=${tmplRes.data.id}`);
           setProgress(startRes.data);
         }
@@ -48,16 +48,15 @@ export default function RoadmapDetailPage() {
     if (!template) return;
     const newStatus = !currentStatus;
 
-    // Optimistic UI update
     setProgress((prev: any) => ({
       ...prev,
-      milestone_states: { ...(prev?.milestone_states || {}), [milestoneId]: newStatus }
+      milestone_states: { ...(prev?.milestone_states || {}), [milestoneId]: newStatus },
     }));
 
     try {
       const res = await api.put(`/roadmaps/progress/${template.id}/milestone`, {
         milestone_id: milestoneId,
-        is_completed: newStatus
+        is_completed: newStatus,
       });
       setProgress(res.data);
     } catch (err) {
@@ -69,7 +68,7 @@ export default function RoadmapDetailPage() {
     if (!template) return;
     try {
       const res = await api.post(`/roadmaps/progress/${template.id}/bookmark`, {
-        milestone_id: milestoneId
+        milestone_id: milestoneId,
       });
       setProgress(res.data);
     } catch (err) {
@@ -90,7 +89,13 @@ export default function RoadmapDetailPage() {
   };
 
   if (loading) {
-    return <DashboardShell><div className="text-white">Loading Roadmap...</div></DashboardShell>;
+    return (
+      <DashboardShell>
+        <div className="py-12 text-center text-xs text-[var(--text-muted)]">
+          Loading roadmap telemetry...
+        </div>
+      </DashboardShell>
+    );
   }
 
   const completionPct = progress?.completion_percentage || 0;
@@ -100,90 +105,140 @@ export default function RoadmapDetailPage() {
   return (
     <DashboardShell>
       <div className="max-w-4xl mx-auto space-y-8 pb-16">
-        {/* Top Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
-          <div>
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 uppercase">
-              {template.category}
-            </span>
-            <h1 className="text-3xl font-extrabold text-white mt-2">{template.title} Roadmap</h1>
-            <p className="text-slate-400 text-sm mt-1">{template.description}</p>
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle)]">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <Badge variant="burnt" size="sm">
+                {template?.category || 'Curated'}
+              </Badge>
+              <span className="text-xs font-mono text-[var(--text-muted)]">
+                {template?.milestones?.length || 0} Milestones Total
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+              {template?.title}
+            </h1>
+            <p className="text-xs text-[var(--text-secondary)] max-w-2xl leading-relaxed">
+              {template?.description}
+            </p>
           </div>
 
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handlePersonalizeAI}
-            disabled={personalizing}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-600/30 self-start md:self-auto"
+            isLoading={personalizing}
+            leftIcon={<Sparkles size={14} />}
           >
-            <Sparkles className="w-4 h-4" /> {personalizing ? 'Analyzing Skills...' : 'Personalize with AI'}
-          </button>
+            Personalize with AI
+          </Button>
         </div>
 
-        {/* Progress Bar */}
-        <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
-          <div className="flex justify-between items-center text-sm font-semibold">
-            <span className="text-white flex items-center gap-2"><Award className="w-4 h-4 text-emerald-400" /> Milestone Completion</span>
-            <span className="text-emerald-400 font-mono">{completionPct}%</span>
+        {/* Progress Bar Card */}
+        <Card className="p-5 space-y-3">
+          <div className="flex justify-between items-center text-xs font-semibold">
+            <span className="text-[var(--text-primary)] flex items-center gap-2">
+              <Award size={15} className="text-[#d9541e]" />
+              Milestone Completion Rate
+            </span>
+            <span className="font-mono font-bold text-[#d9541e]">{completionPct}%</span>
           </div>
-          <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-500" style={{ width: `${completionPct}%` }} />
+          <div className="w-full h-2 rounded-full bg-[var(--surface-hover)] border border-[var(--border-subtle)] overflow-hidden">
+            <div
+              className="h-full bg-[#d9541e] transition-all duration-300 rounded-full"
+              style={{ width: `${completionPct}%` }}
+            />
           </div>
-        </div>
+        </Card>
 
-        {/* AI Personalization Annotation Banner */}
+        {/* AI Recommendations Banner */}
         {aiAnnotation && (
-          <div className="p-6 rounded-2xl bg-indigo-950/60 border border-indigo-500/50 space-y-3 text-indigo-200">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-400" /> AI Skill Recommendations
+          <Card className="p-5 border-[#d9541e]/30 bg-[#d9541e]/5 space-y-2.5">
+            <h3 className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-2">
+              <Sparkles size={14} className="text-[#d9541e]" />
+              AI Tailored Recommendations
             </h3>
-            <p className="text-xs leading-relaxed">{aiAnnotation.advice}</p>
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+              {aiAnnotation.advice}
+            </p>
             {aiAnnotation.recommended_focus && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                <span className="text-xs text-indigo-300 font-medium">Recommended Focus:</span>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="text-[11px] font-semibold text-[var(--text-primary)]">
+                  Focus Areas:
+                </span>
                 {aiAnnotation.recommended_focus.map((f: string, i: number) => (
-                  <span key={i} className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200 text-[10px] border border-indigo-500/30">
+                  <Badge key={i} variant="burnt" size="sm">
                     {f}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             )}
-          </div>
+          </Card>
         )}
 
-        {/* Timeline Checklist */}
+        {/* Milestones Checklist */}
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-white">Milestones & Learning Objectives</h2>
+          <h2 className="text-base font-bold text-[var(--text-primary)]">
+            Milestones & Learning Objectives
+          </h2>
 
-          <div className="space-y-4 relative before:absolute before:left-6 before:top-4 before:bottom-4 before:w-0.5 before:bg-slate-800">
-            {template.milestones.map((m: any, idx: number) => {
+          <div className="space-y-3">
+            {template?.milestones?.map((m: any, idx: number) => {
               const isDone = Boolean(milestoneStates[m.id]);
               const isBookmarked = bookmarks.includes(m.id);
 
               return (
-                <div key={m.id} className={`relative pl-14 p-5 rounded-2xl border transition-all ${isDone ? 'bg-slate-900/60 border-slate-800/80 opacity-80' : 'bg-slate-900 border-slate-800 hover:border-slate-700'}`}>
-                  {/* Timeline Checkbox Node */}
-                  <button
-                    onClick={() => handleToggleMilestone(m.id, isDone)}
-                    className="absolute left-4 top-5 text-indigo-400 hover:scale-110 transition z-10"
-                  >
-                    {isDone ? <CheckCircle2 className="w-6 h-6 text-emerald-400" /> : <Circle className="w-6 h-6 text-slate-600" />}
-                  </button>
+                <Card
+                  key={m.id}
+                  className={`p-4 transition-all duration-150 ${
+                    isDone ? 'opacity-70 bg-[var(--surface-hover)]' : 'hover:border-[var(--border-strong)]'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3.5">
+                      <button
+                        onClick={() => handleToggleMilestone(m.id, isDone)}
+                        className="mt-0.5 text-[#d9541e] hover:opacity-80 transition-opacity"
+                        aria-label={isDone ? 'Mark milestone incomplete' : 'Mark milestone complete'}
+                      >
+                        {isDone ? (
+                          <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400" />
+                        ) : (
+                          <Circle size={18} className="text-[var(--text-muted)]" />
+                        )}
+                      </button>
 
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-[10px] text-indigo-400 font-mono font-semibold uppercase">Milestone 0{idx + 1}</span>
-                      <h3 className={`text-base font-bold mt-0.5 ${isDone ? 'text-slate-400 line-through' : 'text-white'}`}>{m.title}</h3>
-                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">{m.description}</p>
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-mono uppercase font-semibold text-[var(--text-muted)]">
+                          Milestone #{String(idx + 1).padStart(2, '0')}
+                        </span>
+                        <h3
+                          className={`text-sm font-bold ${
+                            isDone ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'
+                          }`}
+                        >
+                          {m.title}
+                        </h3>
+                        <p className="text-xs text-[var(--text-secondary)] leading-relaxed pt-1">
+                          {m.description}
+                        </p>
+                      </div>
                     </div>
 
                     <button
                       onClick={() => handleToggleBookmark(m.id)}
-                      className={`p-1.5 rounded-lg border transition ${isBookmarked ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-500 hover:text-slate-300'}`}
+                      className={`p-2 rounded-lg border text-xs transition-colors duration-150 ${
+                        isBookmarked
+                          ? 'border-[#d9541e]/40 bg-[#d9541e]/10 text-[#d9541e]'
+                          : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]'
+                      }`}
+                      aria-label="Bookmark milestone"
                     >
-                      <Bookmark className="w-4 h-4" />
+                      <Bookmark size={14} />
                     </button>
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>

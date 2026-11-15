@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
 import { Bell, Mail, Shield, Check } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, Button } from '@/components/ui';
 
 export default function NotificationSettingsPage() {
   const [emailEnabled, setEmailEnabled] = useState(true);
@@ -12,7 +13,7 @@ export default function NotificationSettingsPage() {
     roadmap: true,
     github: true,
     ai_advice: true,
-    system: true
+    system: true,
   });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -34,7 +35,7 @@ export default function NotificationSettingsPage() {
   };
 
   const handleToggleCategory = (cat: string) => {
-    setCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
+    setCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -42,7 +43,7 @@ export default function NotificationSettingsPage() {
     try {
       await api.put('/notifications/preferences', {
         email_enabled: emailEnabled,
-        category_preferences: categories
+        category_preferences: categories,
       });
       setMessage('Notification preferences saved successfully!');
     } catch (err: any) {
@@ -50,77 +51,97 @@ export default function NotificationSettingsPage() {
     }
   };
 
-  if (loading) {
-    return <DashboardShell><div className="text-white">Loading Notification Preferences...</div></DashboardShell>;
-  }
+  const CATEGORY_ITEMS = [
+    { id: 'interview', label: 'Interview Reminders', desc: 'Alerts for upcoming technical & HR interview rounds.' },
+    { id: 'roadmap', label: 'Roadmap Milestone Reminders', desc: 'Alerts for active learning roadmaps (7-day cooldown).' },
+    { id: 'github', label: 'GitHub Activity Sync', desc: 'Alerts when new repositories or stars are discovered.' },
+    { id: 'ai_advice', label: 'AI Career Recommendations', desc: 'Proactive career suggestions from the AI Advisor.' },
+    { id: 'system', label: 'System Announcements', desc: 'Important platform updates and security alerts.' },
+  ];
 
   return (
     <DashboardShell>
       <div className="max-w-3xl mx-auto space-y-8 pb-16">
-        <div>
-          <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-            <Bell className="w-8 h-8 text-indigo-400" /> Notification Preferences
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">Manage delivery channels, email toggles, and notification categories.</p>
+        {/* Header */}
+        <div className="pb-2 border-b border-[var(--border-subtle)]">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+              Notification Preferences
+            </h1>
+            <Badge variant="burnt" size="sm">
+              Delivery Channels
+            </Badge>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">
+            Configure delivery channels, email toggles, and notification trigger thresholds.
+          </p>
         </div>
 
         {message && (
-          <div className="p-4 rounded-xl bg-indigo-950/60 border border-indigo-500/50 text-indigo-200 text-sm flex items-center gap-2">
-            <Check className="w-4 h-4 text-emerald-400" /> {message}
+          <div className="p-3 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Check size={14} className="text-emerald-500" /> {message}
+            </span>
+            <button
+              onClick={() => setMessage('')}
+              className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs font-mono"
+            >
+              dismiss
+            </button>
           </div>
         )}
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* Email Master Toggle */}
-          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+          <Card className="p-5 flex items-center justify-between">
             <div className="space-y-1">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <Mail className="w-4 h-4 text-indigo-400" /> Email Notifications
+              <h2 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
+                <Mail size={16} className="text-[#d9541e]" />
+                Email Notifications
               </h2>
-              <p className="text-xs text-slate-400">Receive email alerts for enabled notification categories.</p>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Receive transactional and alert summaries to your verified address.
+              </p>
             </div>
             <input
               type="checkbox"
               checked={emailEnabled}
-              onChange={e => setEmailEnabled(e.target.checked)}
-              className="w-5 h-5 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              onChange={(e) => setEmailEnabled(e.target.checked)}
+              className="w-4 h-4 rounded border-[var(--border-subtle)] text-[#d9541e] focus:ring-[#d9541e] cursor-pointer"
             />
-          </div>
+          </Card>
 
           {/* Category Toggles */}
-          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Shield className="w-4 h-4 text-indigo-400" /> Notification Categories
-            </h2>
+          <Card className="p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <Shield size={16} className="text-[#d9541e]" />
+              <h2 className="text-sm font-bold text-[var(--text-primary)]">
+                Active Notification Categories
+              </h2>
+            </div>
 
-            <div className="space-y-3 divide-y divide-slate-800/60">
-              {[
-                { id: 'interview', label: 'Interview Reminders', desc: 'Alerts for upcoming technical & HR interview rounds.' },
-                { id: 'roadmap', label: 'Roadmap Milestone Reminders', desc: 'Alerts for active learning roadmaps (7-day cooldown).' },
-                { id: 'github', label: 'GitHub Activity Sync', desc: 'Alerts when new repositories or stars are discovered.' },
-                { id: 'ai_advice', label: 'AI Career Recommendations', desc: 'Proactive career suggestions from the AI Advisor.' },
-                { id: 'system', label: 'System Announcements', desc: 'Important platform updates and security alerts.' }
-              ].map(cat => (
-                <div key={cat.id} className="pt-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold text-white">{cat.label}</p>
-                    <p className="text-[10px] text-slate-400">{cat.desc}</p>
+            <div className="space-y-3 divide-y divide-[var(--border-subtle)]">
+              {CATEGORY_ITEMS.map((cat) => (
+                <div key={cat.id} className="pt-3 first:pt-0 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-semibold text-[var(--text-primary)]">{cat.label}</p>
+                    <p className="text-[11px] text-[var(--text-secondary)]">{cat.desc}</p>
                   </div>
                   <input
                     type="checkbox"
                     checked={!!categories[cat.id]}
                     onChange={() => handleToggleCategory(cat.id)}
-                    className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    className="w-4 h-4 rounded border-[var(--border-subtle)] text-[#d9541e] focus:ring-[#d9541e] cursor-pointer"
                   />
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
 
           <div className="flex justify-end">
-            <button type="submit" className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30">
+            <Button variant="primary" size="sm" type="submit">
               Save Preferences
-            </button>
+            </Button>
           </div>
         </form>
       </div>

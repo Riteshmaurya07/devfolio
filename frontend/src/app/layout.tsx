@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from 'sonner';
+import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Devfolio OS",
-  description: "Your unified developer portfolio and learning operating system",
+  title: "Devfolio OS | Developer Portfolio & Metrics Dashboard",
+  description: "A calm, unified developer portfolio, dashboard, and metrics operating system",
 };
 
 export default function RootLayout({
@@ -26,11 +27,44 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        {children}
-        <Toaster position="bottom-right" richColors />
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var saved = localStorage.getItem('devfolio-theme');
+                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var theme = saved || (prefersDark ? 'dark' : 'light');
+                  if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors duration-200">
+        <ThemeProvider>
+          {children}
+          <Toaster 
+            position="bottom-right" 
+            toastOptions={{
+              style: {
+                background: 'var(--bg-surface)',
+                color: 'var(--text-primary)',
+                borderColor: 'var(--border-subtle)',
+                borderRadius: '8px',
+              }
+            }} 
+          />
+        </ThemeProvider>
       </body>
     </html>
   );

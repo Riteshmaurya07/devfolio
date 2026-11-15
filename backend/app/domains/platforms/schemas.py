@@ -16,6 +16,7 @@ class CodingProfileResponse(BaseModel):
     sync_error_message: Optional[str] = None
     ai_recommendation: Optional[Dict[str, Any]] = None
     last_synced_at: Optional[datetime] = None
-    created_at: datetime
+    created_at: Optional[datetime] = None
+    stats: Optional[Dict[str, Any]] = None
 
     model_config = ConfigDict(from_attributes=True)

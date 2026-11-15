@@ -3,15 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
-import { Sparkles, Move, Palette, Layers, Globe, Eye, Plus, Trash2 } from 'lucide-react';
+import { Sparkles, Move, Palette, Layers, Globe, Eye, ArrowUp, ArrowDown } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, Button, Input } from '@/components/ui';
 
 const THEMES = [
-  { name: 'minimal', label: 'Minimal', bg: 'bg-white text-slate-900 border-slate-200' },
-  { name: 'modern', label: 'Modern', bg: 'bg-slate-900 text-white border-slate-700' },
-  { name: 'glass', label: 'Glassmorphism', bg: 'bg-slate-950 text-indigo-300 border-indigo-500/30' },
-  { name: 'dark', label: 'Dark Monochrome', bg: 'bg-black text-white border-zinc-800' },
-  { name: 'gradient', label: 'Indigo Gradient', bg: 'bg-gradient-to-br from-indigo-950 to-slate-900 text-white border-indigo-500/40' },
-  { name: 'neon', label: 'Neon Cyber', bg: 'bg-black text-emerald-400 border-emerald-500' }
+  { name: 'minimal', label: 'Minimal Studio', desc: 'Light/Dark clean monochrome' },
+  { name: 'modern', label: 'Editorial Amber', desc: 'Cream, deep black & burnt orange' },
+  { name: 'glass', label: 'Translucent Glass', desc: 'Subtle frosted borders' },
+  { name: 'dark', label: 'Pure Obsidian', desc: 'Deep black and silver tokens' },
+  { name: 'gradient', label: 'Warm Terra', desc: 'Rich earthen tones' },
+  { name: 'neon', label: 'Terminal Code', desc: 'High-contrast monospace accents' },
 ];
 
 export default function PortfolioBuilderPage() {
@@ -42,15 +43,24 @@ export default function PortfolioBuilderPage() {
       const res = await api.get('/portfolio/me');
       const data = res.data;
       setPortfolio(data);
-      setSlug(data.slug);
+      setSlug(data.slug || '');
       setThemeName(data.theme_name || 'modern');
       setPrimaryColor(data.primary_color || '');
-      setIsPublished(data.is_published);
+      setIsPublished(data.is_published ?? true);
       setSeoTitle(data.seo_title || '');
       setSeoDescription(data.seo_description || '');
-      setSectionOrder(data.section_order || ["about", "skills", "projects", "experience", "education", "certifications", "achievements"]);
+      setSectionOrder(
+        data.section_order || [
+          'about',
+          'skills',
+          'projects',
+          'experience',
+          'education',
+          'certifications',
+          'achievements',
+        ]
+      );
 
-      // Fetch user github repos for import
       try {
         const ghRes = await api.get(`/github/stats/${data.slug}`);
         setGithubRepos(ghRes.data.repositories || []);
@@ -75,10 +85,10 @@ export default function PortfolioBuilderPage() {
         is_published: isPublished,
         seo_title: seoTitle,
         seo_description: seoDescription,
-        section_order: sectionOrder
+        section_order: sectionOrder,
       });
       setPortfolio(res.data);
-      setMessage('Portfolio settings saved successfully!');
+      setMessage('Portfolio configurations saved successfully!');
     } catch (err: any) {
       setMessage(err.response?.data?.detail || 'Failed to save portfolio settings.');
     } finally {
@@ -98,8 +108,8 @@ export default function PortfolioBuilderPage() {
   };
 
   const toggleRepoSelection = (repoId: string) => {
-    setSelectedRepos(prev => 
-      prev.includes(repoId) ? prev.filter(id => id !== repoId) : [...prev, repoId]
+    setSelectedRepos((prev) =>
+      prev.includes(repoId) ? prev.filter((id) => id !== repoId) : [...prev, repoId]
     );
   };
 
@@ -113,199 +123,237 @@ export default function PortfolioBuilderPage() {
     setSectionOrder(newOrder);
   };
 
-  if (loading) {
-    return <DashboardShell><div className="text-white">Loading Portfolio Builder...</div></DashboardShell>;
-  }
-
   return (
     <DashboardShell>
-      <div className="max-w-6xl mx-auto space-y-8 pb-16">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto space-y-8 pb-16">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[var(--border-subtle)]">
           <div>
-            <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-              <Sparkles className="w-8 h-8 text-indigo-400" /> Portfolio Builder
-            </h1>
-            <p className="text-slate-400 text-sm mt-1">Configure your personal portfolio theme, sections, and custom URL.</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                Portfolio CMS Builder
+              </h1>
+              <Badge variant="burnt" size="sm">
+                Custom Domain
+              </Badge>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
+              Personalize themes, rearrange sections, import verified GitHub projects, and publish your URL.
+            </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <a
-              href={`/p/${slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-2"
-            >
-              <Eye className="w-4 h-4 text-indigo-400" /> Preview as Visitor
-            </a>
-            <button
+          <div className="flex items-center gap-2.5">
+            {slug && (
+              <a href={`/p/${slug}`} target="_blank" rel="noopener noreferrer">
+                <Button variant="secondary" size="sm" leftIcon={<Eye size={13} />}>
+                  Live Preview
+                </Button>
+              </a>
+            )}
+            <Button
+              variant="primary"
+              size="sm"
               onClick={handleSaveConfig}
-              disabled={saving}
-              className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30"
+              isLoading={saving}
             >
-              {saving ? 'Saving...' : 'Save Portfolio'}
-            </button>
+              Save Changes
+            </Button>
           </div>
         </div>
 
         {message && (
-          <div className="p-4 rounded-xl bg-indigo-950/60 border border-indigo-500/50 text-indigo-200 text-sm">
-            {message}
+          <div className="p-3 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] flex items-center justify-between">
+            <span>{message}</span>
+            <button
+              onClick={() => setMessage('')}
+              className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs font-mono"
+            >
+              dismiss
+            </button>
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Controls Column */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-6">
             {/* Slug & Visibility */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Globe className="w-5 h-5 text-indigo-400" /> Public URL & Metadata
-              </h2>
+            <Card className="p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Globe size={18} className="text-[#d9541e]" />
+                <h2 className="text-base font-bold text-[var(--text-primary)]">
+                  Public URL & SEO Metadata
+                </h2>
+              </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Custom Slug (Unique URL)</label>
+                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                  Public Portfolio URL Slug
+                </label>
                 <div className="flex items-center">
-                  <span className="px-3 py-2 bg-slate-800 border border-r-0 border-slate-700 rounded-l-lg text-slate-400 text-xs font-mono">
+                  <span className="px-3 py-2 bg-[var(--surface-hover)] border border-r-0 border-[var(--border-subtle)] rounded-l-lg text-[var(--text-muted)] text-xs font-mono">
                     devfolio.com/p/
                   </span>
                   <input
                     type="text"
                     value={slug}
-                    onChange={e => setSlug(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-slate-700 text-white rounded-r-lg bg-slate-800 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    onChange={(e) => setSlug(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-r-lg bg-[var(--bg-canvas)] font-mono text-xs focus:outline-none focus:border-[#d9541e]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">SEO Title</label>
-                  <input
-                    type="text"
-                    value={seoTitle}
-                    onChange={e => setSeoTitle(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-700 text-white rounded-lg bg-slate-800 text-sm"
-                    placeholder="John Doe — Senior Fullstack Developer"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">SEO Description</label>
-                  <input
-                    type="text"
-                    value={seoDescription}
-                    onChange={e => setSeoDescription(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-700 text-white rounded-lg bg-slate-800 text-sm"
-                    placeholder="Fullstack engineer portfolio showcasing projects..."
-                  />
-                </div>
+                <Input
+                  label="SEO Meta Title"
+                  value={seoTitle}
+                  onChange={(e) => setSeoTitle(e.target.value)}
+                  placeholder="Ada Lovelace — Senior Backend Architect"
+                />
+                <Input
+                  label="SEO Description"
+                  value={seoDescription}
+                  onChange={(e) => setSeoDescription(e.target.value)}
+                  placeholder="Verified portfolio featuring distributed systems projects..."
+                />
               </div>
-            </div>
+            </Card>
 
             {/* Theme Picker */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Palette className="w-5 h-5 text-indigo-400" /> CSS Token Theme System
-              </h2>
+            <Card className="p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Palette size={18} className="text-[#d9541e]" />
+                <h2 className="text-base font-bold text-[var(--text-primary)]">
+                  CSS Design Tokens
+                </h2>
+              </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {THEMES.map(t => (
-                  <button
-                    key={t.name}
-                    type="button"
-                    onClick={() => setThemeName(t.name)}
-                    className={`p-4 rounded-xl border text-left transition-all ${t.bg} ${themeName === t.name ? 'ring-2 ring-indigo-500 shadow-xl scale-105' : 'opacity-70 hover:opacity-100'}`}
-                  >
-                    <p className="font-bold text-xs">{t.label}</p>
-                    <p className="text-[10px] mt-1 opacity-70">CSS Custom Properties</p>
-                  </button>
-                ))}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {THEMES.map((t) => {
+                  const isCurrent = themeName === t.name;
+                  return (
+                    <button
+                      key={t.name}
+                      type="button"
+                      onClick={() => setThemeName(t.name)}
+                      className={`p-3.5 rounded-lg border text-left transition-all duration-150 ${
+                        isCurrent
+                          ? 'border-[#d9541e] bg-[#d9541e]/5 ring-1 ring-[#d9541e]'
+                          : 'border-[var(--border-subtle)] bg-[var(--surface-hover)] hover:border-[var(--border-strong)]'
+                      }`}
+                    >
+                      <p className="font-bold text-xs text-[var(--text-primary)]">{t.label}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-1">{t.desc}</p>
+                    </button>
+                  );
+                })}
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Custom Accent Color (Hex Code)</label>
-                <input
-                  type="text"
+                <Input
+                  label="Custom Accent Color Hex (Optional)"
                   value={primaryColor}
-                  onChange={e => setPrimaryColor(e.target.value)}
-                  className="w-48 px-3 py-2 border border-slate-700 text-white rounded-lg bg-slate-800 text-sm"
-                  placeholder="#6366f1"
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  placeholder="#d9541e"
                 />
               </div>
-            </div>
+            </Card>
 
             {/* Section Ordering */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Layers className="w-5 h-5 text-indigo-400" /> Reorder Portfolio Sections
-              </h2>
-              <p className="text-xs text-slate-400">Rearrange the order of sections as they appear on your public portfolio page.</p>
+            <Card className="p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Layers size={18} className="text-[#d9541e]" />
+                <h2 className="text-base font-bold text-[var(--text-primary)]">
+                  Section Layout Hierarchy
+                </h2>
+              </div>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Reorder the presentation sequence of sections rendered on your public profile.
+              </p>
 
               <div className="space-y-2">
                 {sectionOrder.map((section, idx) => (
-                  <div key={section} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 text-white">
-                    <span className="capitalize font-medium text-sm flex items-center gap-2">
-                      <Move className="w-4 h-4 text-slate-500" /> {section}
+                  <div
+                    key={section}
+                    className="flex items-center justify-between p-3 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
+                  >
+                    <span className="capitalize font-semibold text-xs flex items-center gap-2">
+                      <Move size={14} className="text-[var(--text-muted)]" />
+                      {section}
                     </span>
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => moveSection(idx, 'up')}
                         disabled={idx === 0}
-                        className="px-2 py-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded text-xs"
                       >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
+                        <ArrowUp size={12} />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => moveSection(idx, 'down')}
                         disabled={idx === sectionOrder.length - 1}
-                        className="px-2 py-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded text-xs"
                       >
-                        ↓
-                      </button>
+                        <ArrowDown size={12} />
+                      </Button>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* GitHub Import Column */}
-          <div className="space-y-8">
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-              <h2 className="text-lg font-bold text-white">Import GitHub Repos</h2>
-              <p className="text-xs text-slate-400">Select synced GitHub repositories to auto-create projects with pre-filled tech stack and URLs.</p>
+          <div className="space-y-6">
+            <Card className="p-6 space-y-4">
+              <h2 className="text-base font-bold text-[var(--text-primary)]">
+                Import GitHub Repos
+              </h2>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Select repositories from your connected account to auto-populate the Projects section.
+              </p>
 
               {githubRepos.length === 0 ? (
-                <p className="text-xs text-slate-500 italic">No synced GitHub repositories found. Connect GitHub first.</p>
+                <div className="py-6 text-center text-xs text-[var(--text-muted)] border border-dashed border-[var(--border-subtle)] rounded-lg">
+                  No synced repositories found. Ensure GitHub is connected in Profile Settings.
+                </div>
               ) : (
-                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                  {githubRepos.map(repo => (
-                    <label key={repo.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-slate-200 cursor-pointer">
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {githubRepos.map((repo) => (
+                    <label
+                      key={repo.id}
+                      className="flex items-center gap-3 p-2.5 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] cursor-pointer hover:border-[var(--border-strong)]"
+                    >
                       <input
                         type="checkbox"
                         checked={selectedRepos.includes(repo.id)}
                         onChange={() => toggleRepoSelection(repo.id)}
-                        className="rounded border-slate-700 text-indigo-600"
+                        className="rounded border-[var(--border-subtle)] text-[#d9541e] focus:ring-[#d9541e]"
                       />
                       <div className="truncate">
-                        <p className="font-semibold text-white truncate">{repo.name}</p>
-                        <p className="text-[10px] text-slate-400">{repo.language || 'Code'} • ★ {repo.stars_count}</p>
+                        <p className="font-semibold text-xs text-[var(--text-primary)] truncate">
+                          {repo.name}
+                        </p>
+                        <p className="text-[10px] text-[var(--text-muted)] font-mono">
+                          {repo.language || 'Code'} • ★ {repo.stars_count}
+                        </p>
                       </div>
                     </label>
                   ))}
                 </div>
               )}
 
-              <button
-                type="button"
+              <Button
+                variant="primary"
+                fullWidth
+                size="sm"
                 onClick={handleImportGitHub}
                 disabled={selectedRepos.length === 0}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-semibold rounded-xl"
               >
-                Import Selected Repositories
-              </button>
-            </div>
+                Import {selectedRepos.length > 0 ? `(${selectedRepos.length})` : ''} Selected
+              </Button>
+            </Card>
           </div>
         </div>
       </div>

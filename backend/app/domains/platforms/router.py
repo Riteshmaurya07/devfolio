@@ -29,7 +29,8 @@ async def get_my_coding_profiles(
     profile = await profile_repo.get_by_user_id(current_user.id)
     if not profile:
         raise NotFoundError(message="User profile not found")
-    return await service.repository.get_all_by_profile_id(profile.id)
+    summary = await service.get_dashboard_summary(profile.id)
+    return summary.get("profiles", [])
 
 @router.post("/connect", response_model=CodingProfileResponse)
 async def connect_platform(
@@ -42,7 +43,12 @@ async def connect_platform(
     profile = await profile_repo.get_by_user_id(current_user.id)
     if not profile:
         raise NotFoundError(message="User profile not found")
-    return await service.connect_platform(profile.id, request.platform, request.external_username)
+    cp = await service.connect_platform(profile.id, request.platform, request.external_username)
+    summary = await service.get_dashboard_summary(profile.id)
+    for p in summary.get("profiles", []):
+        if str(p.get("id")) == str(cp.id) or p.get("platform") == cp.platform:
+            return p
+    return cp
 
 @router.post("/{platform}/sync", response_model=CodingProfileResponse)
 async def manual_sync_platform(
@@ -55,7 +61,12 @@ async def manual_sync_platform(
     profile = await profile_repo.get_by_user_id(current_user.id)
     if not profile:
         raise NotFoundError(message="User profile not found")
-    return await service.trigger_manual_sync(profile.id, platform)
+    cp = await service.trigger_manual_sync(profile.id, platform)
+    summary = await service.get_dashboard_summary(profile.id)
+    for p in summary.get("profiles", []):
+        if str(p.get("id")) == str(cp.id) or p.get("platform") == cp.platform:
+            return p
+    return cp
 
 @router.get("/dashboard/me")
 async def get_my_dashboard_summary(
@@ -67,6 +78,18 @@ async def get_my_dashboard_summary(
     profile = await profile_repo.get_by_user_id(current_user.id)
     if not profile:
         raise NotFoundError(message="User profile not found")
+    return await service.get_dashboard_summary(profile.id)
+
+@router.get("/u/{username}")
+async def get_public_coding_summary(
+    username: str,
+    service: CodingDashboardService = Depends(get_coding_service),
+    db = Depends(get_db)
+):
+    profile_repo = ProfileRepository(db)
+    profile = await profile_repo.get_by_username(username)
+    if not profile:
+        raise NotFoundError(message=f"Profile @{username} not found")
     return await service.get_dashboard_summary(profile.id)
 
 @router.post("/recommendations")

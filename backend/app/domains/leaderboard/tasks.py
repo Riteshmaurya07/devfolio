@@ -38,11 +38,30 @@ def recompute_leaderboard_rankings_task():
                 WHERE cp.profile_id = :pid
             """), {"pid": pid}).fetchone()
 
+            cc_res = db.execute(text("""
+                SELECT cc.total_solved, cc.current_rating
+                FROM codechef_stats cc
+                JOIN coding_profiles cp ON cc.coding_profile_id = cp.id
+                WHERE cp.profile_id = :pid
+            """), {"pid": pid}).fetchone()
+
+            gfg_res = db.execute(text("""
+                SELECT gfg.total_solved
+                FROM geeksforgeeks_stats gfg
+                JOIN coding_profiles cp ON gfg.coding_profile_id = cp.id
+                WHERE cp.profile_id = :pid
+            """), {"pid": pid}).fetchone()
+
             cf_solved = cf_res.total_solved if (cf_res and cf_res.total_solved) else 0
             lc_solved = lc_res.total_solved if (lc_res and lc_res.total_solved) else 0
+            cc_solved = cc_res.total_solved if (cc_res and cc_res.total_solved) else 0
+            gfg_solved = gfg_res.total_solved if (gfg_res and gfg_res.total_solved) else 0
 
-            solved_count = cf_solved + lc_solved
-            rating = cf_res.rating if (cf_res and cf_res.rating) else 0
+            solved_count = cf_solved + lc_solved + cc_solved + gfg_solved
+            rating = max(
+                cf_res.rating if (cf_res and cf_res.rating) else 0,
+                cc_res.current_rating if (cc_res and cc_res.current_rating) else 0
+            )
 
             # 2. GitHub commits & stars
             gh_res = db.execute(text("SELECT contribution_calendar FROM github_accounts WHERE profile_id = :pid"), {"pid": pid}).fetchone()
