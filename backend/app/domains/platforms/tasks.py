@@ -1,9 +1,12 @@
 from app.core.celery_app import celery_app
 import logging
 import asyncio
+import uuid
 from datetime import datetime
 from sqlalchemy.future import select
 from app.core.database import AsyncSessionLocal
+from app.domains.users.models import User  # Required for SQLAlchemy relationship registry
+from app.domains.profiles.models import Profile  # Required for SQLAlchemy relationship registry
 from app.domains.platforms.models import CodingProfile, CodeforcesStats, LeetCodeStats
 from app.domains.platforms.clients.codeforces import CodeforcesClient
 from app.domains.platforms.clients.leetcode import LeetCodeClient
@@ -12,9 +15,14 @@ logger = logging.getLogger("devfolio.platform_tasks")
 
 async def _sync_codeforces_async(profile_id_str: str):
     async with AsyncSessionLocal() as session:
+        try:
+            pid = uuid.UUID(profile_id_str)
+        except ValueError:
+            pid = profile_id_str
+
         result = await session.execute(
             select(CodingProfile).where(
-                CodingProfile.profile_id == profile_id_str,
+                CodingProfile.profile_id == pid,
                 CodingProfile.platform == "codeforces"
             )
         )
@@ -36,7 +44,8 @@ async def _sync_codeforces_async(profile_id_str: str):
                 session.add(stats)
             
             for k, v in stats_data.items():
-                setattr(stats, k, v)
+                if hasattr(stats, k):
+                    setattr(stats, k, v)
                 
             cp.sync_status = "ok"
             cp.sync_error_message = None
@@ -51,9 +60,14 @@ async def _sync_codeforces_async(profile_id_str: str):
 
 async def _sync_leetcode_async(profile_id_str: str):
     async with AsyncSessionLocal() as session:
+        try:
+            pid = uuid.UUID(profile_id_str)
+        except ValueError:
+            pid = profile_id_str
+
         result = await session.execute(
             select(CodingProfile).where(
-                CodingProfile.profile_id == profile_id_str,
+                CodingProfile.profile_id == pid,
                 CodingProfile.platform == "leetcode"
             )
         )
@@ -75,7 +89,8 @@ async def _sync_leetcode_async(profile_id_str: str):
                 session.add(stats)
             
             for k, v in stats_data.items():
-                setattr(stats, k, v)
+                if hasattr(stats, k):
+                    setattr(stats, k, v)
                 
             cp.sync_status = "ok"
             cp.sync_error_message = None

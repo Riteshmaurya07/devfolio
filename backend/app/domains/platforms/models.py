@@ -4,6 +4,7 @@ from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Float, Uni
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from app.domains.profiles.models import Profile
 
 class CodingProfile(Base):
     __tablename__ = "coding_profiles"

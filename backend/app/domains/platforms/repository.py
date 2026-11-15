@@ -71,3 +71,39 @@ class CodingProfileRepository:
             select(CodeChefStats).where(CodeChefStats.coding_profile_id == coding_profile_id)
         )
         return res.scalars().first()
+
+    async def upsert_leetcode_stats(self, coding_profile_id: UUID, stats_data: Dict[str, Any]) -> LeetCodeStats:
+        stats = await self.get_leetcode_stats(coding_profile_id)
+        if not stats:
+            stats = LeetCodeStats(coding_profile_id=coding_profile_id)
+            self.db.add(stats)
+        for k, v in stats_data.items():
+            if hasattr(stats, k):
+                setattr(stats, k, v)
+        await self.db.commit()
+        await self.db.refresh(stats)
+        return stats
+
+    async def upsert_codeforces_stats(self, coding_profile_id: UUID, stats_data: Dict[str, Any]) -> CodeforcesStats:
+        stats = await self.get_codeforces_stats(coding_profile_id)
+        if not stats:
+            stats = CodeforcesStats(coding_profile_id=coding_profile_id)
+            self.db.add(stats)
+        for k, v in stats_data.items():
+            if hasattr(stats, k):
+                setattr(stats, k, v)
+        await self.db.commit()
+        await self.db.refresh(stats)
+        return stats
+
+    async def upsert_codechef_stats(self, coding_profile_id: UUID, stats_data: Dict[str, Any]) -> CodeChefStats:
+        stats = await self.get_codechef_stats(coding_profile_id)
+        if not stats:
+            stats = CodeChefStats(coding_profile_id=coding_profile_id)
+            self.db.add(stats)
+        for k, v in stats_data.items():
+            if hasattr(stats, k):
+                setattr(stats, k, v)
+        await self.db.commit()
+        await self.db.refresh(stats)
+        return stats

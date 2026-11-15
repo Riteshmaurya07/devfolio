@@ -548,6 +548,11 @@ function ProfileEditContent() {
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                             Active
                           </span>
+                          {cp.stats?.total_solved !== undefined && (
+                            <span className="text-[11px] font-bold text-indigo-300">
+                              • {cp.stats.total_solved} Solved
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-indigo-400 font-mono mt-0.5">@{cp.external_username}</p>
                       </div>

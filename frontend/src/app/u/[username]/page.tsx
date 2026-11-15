@@ -533,20 +533,93 @@ export default function PublicProfilePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {activeCodingProfiles.map((cp: any) => (
-                <div
-                  key={cp.id}
-                  className="p-4 rounded-xl bg-slate-800/60 border border-slate-700/50 flex flex-col justify-between"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="capitalize font-bold text-white text-sm">{cp.platform}</span>
-                    <span className="text-[10px] text-emerald-400 font-medium">Synced</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {activeCodingProfiles.map((cp: any) => {
+                const stats = cp.stats;
+                return (
+                  <div
+                    key={cp.id}
+                    className="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col justify-between space-y-3 hover:border-slate-700 transition shadow-sm"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="capitalize font-extrabold text-white text-base">{cp.platform}</span>
+                        {stats?.ranking > 0 && (
+                          <span className="text-[10px] font-mono font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-full">
+                            #{stats.ranking.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-emerald-400 font-medium px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                        Synced
+                      </span>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-indigo-400 font-mono">@{cp.external_username}</p>
+                      {stats?.total_solved !== undefined && (
+                        <div className="text-2xl font-black text-white mt-2">
+                          {stats.total_solved} <span className="text-xs font-normal text-slate-400">Solved</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Breakdown for LeetCode */}
+                    {stats && cp.platform === 'leetcode' && (
+                      <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                        <div className="grid grid-cols-3 gap-1.5 text-center">
+                          <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                            <div className="text-[10px] text-emerald-400 font-medium">Easy</div>
+                            <div className="text-xs font-bold text-white">{stats.easy_solved || 0}</div>
+                          </div>
+                          <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                            <div className="text-[10px] text-amber-400 font-medium">Med</div>
+                            <div className="text-xs font-bold text-white">{stats.medium_solved || 0}</div>
+                          </div>
+                          <div className="p-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20">
+                            <div className="text-[10px] text-rose-400 font-medium">Hard</div>
+                            <div className="text-xs font-bold text-white">{stats.hard_solved || 0}</div>
+                          </div>
+                        </div>
+                        {stats.acceptance_rate > 0 && (
+                          <div className="text-[11px] text-slate-400 text-right">
+                            Acceptance: <span className="text-slate-200 font-medium">{stats.acceptance_rate}%</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Breakdown for Codeforces */}
+                    {stats && cp.platform === 'codeforces' && (
+                      <div className="space-y-1.5 pt-2 border-t border-slate-800/80 text-xs">
+                        <div className="flex justify-between text-slate-400">
+                          <span>Rating:</span>
+                          <span className="text-white font-bold">{stats.rating || 0}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                          <span>Max Rating:</span>
+                          <span className="text-indigo-300 font-medium">{stats.max_rating || 0}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                          <span>Rank:</span>
+                          <span className="text-amber-400 capitalize">{stats.rank || 'Unrated'}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-xs text-indigo-400 font-mono mt-1">@{cp.external_username}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
+
+            {/* Submission Calendar Heatmap if available */}
+            {codingSummary?.submission_calendar && Object.keys(codingSummary.submission_calendar).length > 0 && (
+              <div className="pt-2">
+                <ContributionHeatmap
+                  data={codingSummary.submission_calendar}
+                  title="Competitive Coding Activity Calendar"
+                />
+              </div>
+            )}
           </div>
         )}
 

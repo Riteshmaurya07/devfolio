@@ -139,11 +139,36 @@ export default function CodingDashboardPage() {
                 </div>
 
                 {connected ? (
-                  <div className="space-y-1">
-                    <p className="text-base font-extrabold text-indigo-400">@{connected.external_username}</p>
-                    <p className="text-[10px] text-slate-400">
-                      {connected.last_synced_at ? `Synced ${new Date(connected.last_synced_at).toLocaleTimeString()}` : 'Showing cached data'}
-                    </p>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-base font-extrabold text-indigo-400">@{connected.external_username}</p>
+                      <p className="text-[10px] text-slate-400">
+                        {connected.last_synced_at ? `Synced ${new Date(connected.last_synced_at).toLocaleTimeString()}` : 'Showing cached data'}
+                      </p>
+                    </div>
+
+                    {connected.stats?.total_solved !== undefined && (
+                      <div className="pt-2 border-t border-slate-800">
+                        <div className="text-lg font-bold text-white">
+                          {connected.stats.total_solved} <span className="text-xs font-normal text-slate-400">Solved</span>
+                        </div>
+                        {connected.platform === 'leetcode' && (
+                          <div className="flex items-center gap-1.5 text-[10px] mt-1 text-slate-300">
+                            <span className="text-emerald-400 font-semibold">{connected.stats.easy_solved || 0}E</span> •
+                            <span className="text-amber-400 font-semibold">{connected.stats.medium_solved || 0}M</span> •
+                            <span className="text-rose-400 font-semibold">{connected.stats.hard_solved || 0}H</span>
+                            {connected.stats.ranking > 0 && (
+                              <span className="ml-auto text-indigo-300 font-mono">#{connected.stats.ranking.toLocaleString()}</span>
+                            )}
+                          </div>
+                        )}
+                        {connected.platform === 'codeforces' && connected.stats.rating !== undefined && (
+                          <div className="text-xs text-slate-300 mt-1">
+                            Rating: <span className="font-bold text-white">{connected.stats.rating}</span> ({connected.stats.rank})
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-xs text-slate-400">Connect account to track problem solves.</p>
@@ -166,7 +191,7 @@ export default function CodingDashboardPage() {
         {/* Aggregate Activity Heatmap */}
         <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
           <h2 className="text-lg font-bold text-white">Aggregated Submission Heatmap</h2>
-          <ContributionHeatmap data={{}} title="Aggregated Submission Heatmap" />
+          <ContributionHeatmap data={summary?.submission_calendar || {}} title="Aggregated Submission Heatmap" />
         </div>
 
         {/* Topic Analysis & Weak Area Detection */}
