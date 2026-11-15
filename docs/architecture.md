@@ -112,17 +112,16 @@ erDiagram
         datetime created_at
     }
 
-    RESUMES {
-        uuid id PK
-        uuid user_id FK
-        string title
-    }
-
     RESUME_VERSIONS {
         uuid id PK
-        uuid resume_id FK
-        jsonb resume_data
+        uuid profile_id FK
+        string title
+        int version_number
+        boolean is_active
+        string template_name
+        jsonb content
         datetime created_at
+        datetime updated_at
     }
 
     ROADMAPS {
@@ -181,6 +180,17 @@ The system leverages **Celery and Redis** to decouple notifications from the mai
     *   `GET /api/platforms/analytics`
 *   **AI Advisor:**
     *   `GET /api/ai/chats` & `POST /api/ai/chats` & `POST /api/ai/chats/{chat_id}/message`
+*   **Resume Builder & Document Engine (Module 4):**
+    *   `GET /api/resumes/me` - List all versioned resumes for authenticated user's profile with harmonized schema.
+    *   `GET /api/resumes/{resume_id}` - Retrieve single resume version with dual compatibility schema (`content` and `resume_data`).
+    *   `POST /api/resumes` - Create new resume version with atomic single-transaction activation swap.
+    *   `PUT /api/resumes/{resume_id}` - Update title and resume content/data with bidirectional harmonization (`basics` <-> `contact`, `position` <-> `title`).
+    *   `POST /api/resumes/{version_id}/activate` - Set resume version as active for profile.
+    *   `GET /api/resumes/{version_id}/export/pdf` - High-fidelity PDF generation with ReportLab across modern/minimal/corporate templates.
+    *   `GET /api/resumes/{version_id}/export/docx` - Formatted Microsoft Word DOCX generation with python-docx.
+    *   `POST /api/resumes/{version_id}/review-ats` - ATS score calculation and keyword analysis.
+    *   `POST /api/resumes/generate-from-profile` - Pre-fill resume content from unified profile, projects, and synced handles.
+    *   `POST /api/resumes/upload-and-parse` - Extract resume JSON from uploaded PDF/DOCX.
 *   **Public Profiles & Integrations Hub (Module 2 & 3):**
     *   `GET /api/profiles/u/{username}` - Public developer profile data
     *   `GET /api/platforms/u/{username}` - Public aggregated competitive coding metrics across LeetCode, Codeforces, CodeChef, and GeeksforGeeks

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
+import { toast } from 'sonner';
 import {
   FileText,
   Download,
@@ -226,7 +227,7 @@ export default function ResumeBuilderPage() {
   async function fetchResumes() {
     try {
       const res = await api.get('/resumes/me');
-      const list = res.data;
+      const list = Array.isArray(res.data) ? res.data : [];
       setResumes(list);
 
       const active = list.find((r: Record<string, any>) => r.is_active) || list[0];
@@ -235,6 +236,7 @@ export default function ResumeBuilderPage() {
       }
     } catch (err) {
       console.error(err);
+      toast.error('Failed to load resumes');
     } finally {
       setLoading(false);
     }
@@ -244,18 +246,26 @@ export default function ResumeBuilderPage() {
     setActiveResume(r);
     setTitle(r.title);
     setTemplateName((r.template_name as string) || 'modern');
-    const content = r.content as Record<string, any> | undefined;
-    setSummary((content?.summary as string) || '');
+    const content = (r.content || r.resume_data) as Record<string, any> | undefined;
+    const summaryVal = (content?.summary as string) || (content?.basics?.summary as string) || '';
+    setSummary(summaryVal);
     const skills = content?.skills as string[] | undefined;
     setSkillsInput(skills ? skills.join(', ') : '');
-    const contact = content?.contact as Record<string, any> | undefined;
+    const contact = (content?.contact || content?.basics) as Record<string, any> | undefined;
     setName((contact?.name as string) || '');
     setEmail((contact?.email as string) || '');
     setPhone((contact?.phone as string) || '');
 
     const safeExp = (content?.experience || []) as ExperienceItem[];
     const safeProj = (content?.projects || []) as ProjectItem[];
-    setExperience(safeExp.map((e, i) => ({ ...e, _id: e._id || `exp-${i}-${Date.now()}` })));
+    setExperience(
+      safeExp.map((e, i) => ({
+        ...e,
+        position: e.position || (e as any).title || '',
+        company: e.company || '',
+        _id: e._id || `exp-${i}-${Date.now()}`,
+      }))
+    );
     setProjects(safeProj.map((p, i) => ({ ...p, _id: p._id || `proj-${i}-${Date.now()}` })));
   };
 

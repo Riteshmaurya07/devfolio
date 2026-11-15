@@ -35,7 +35,7 @@ import { Button } from '@/components/ui/Button';
 
 function ProfileNavbar({ currentUser, isOwner }: { currentUser: any; isOwner: boolean }) {
   return (
-    <header className="sticky top-0 z-50 h-16 bg-[var(--bg-surface)] backdrop-blur-md border-b border-[var(--border-subtle)] px-4 sm:px-8 flex items-center justify-between transition-colors duration-200">
+    <header className="sticky top-0 z-50 h-16 bg-[var(--surface)] backdrop-blur-md border-b border-[var(--border-subtle)] px-4 sm:px-8 flex items-center justify-between transition-colors duration-200">
       <div className="flex items-center gap-4 sm:gap-6">
         <Link href={currentUser ? "/dashboard" : "/"} className="flex items-center gap-2.5 group">
           <div className="w-8 h-8 rounded-lg bg-[#d9541e] flex items-center justify-center text-white shadow-2xs group-hover:scale-105 transition">
@@ -181,12 +181,12 @@ export default function PublicProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex flex-col font-sans">
+      <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col font-sans transition-colors duration-200">
         <ProfileNavbar currentUser={currentUser} isOwner={false} />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-sm text-slate-400">Loading developer profile...</span>
+            <div className="w-8 h-8 border-2 border-[#d9541e] border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-xs text-[var(--text-muted)]">Loading developer profile...</span>
           </div>
         </div>
       </div>
@@ -195,21 +195,20 @@ export default function PublicProfilePage() {
 
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex flex-col font-sans">
+      <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col font-sans transition-colors duration-200">
         <ProfileNavbar currentUser={currentUser} isOwner={false} />
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <ShieldAlert className="w-14 h-14 text-amber-500 mb-4" />
-          <h1 className="text-2xl font-bold mb-2">{error || 'Profile not found'}</h1>
-          <p className="text-slate-400 text-sm max-w-sm mb-6">
+          <ShieldAlert size={40} className="text-[#d9541e] mb-3" />
+          <h1 className="text-xl font-bold mb-2">{error || 'Profile not found'}</h1>
+          <p className="text-[var(--text-secondary)] text-xs max-w-sm mb-6">
             {error === 'This profile is private.'
               ? 'The owner has set their profile visibility to private.'
               : 'No developer profile registered under this username.'}
           </p>
-          <Link
-            href="/dashboard"
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold"
-          >
-            Go to Dashboard
+          <Link href="/dashboard">
+            <Button variant="primary" size="sm">
+              Go to Dashboard
+            </Button>
           </Link>
         </div>
       </div>

@@ -6,7 +6,7 @@ import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { Resume } from '@/types';
-import { Trash2, Plus, ArrowLeft } from 'lucide-react';
+import { Trash2, Plus, ArrowLeft, Download } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, Button, Input, Textarea } from '@/components/ui';
 
 export default function ResumeEditorPage() {
@@ -21,7 +21,49 @@ export default function ResumeEditorPage() {
     const fetchResume = async () => {
       try {
         const res = await api.get(`/resumes/${params.id}`);
-        setResume(res.data);
+        const data = res.data;
+        const rawContent = data.resume_data || data.content || {};
+        const contact = rawContent.contact || {};
+        const rawBasics = rawContent.basics || {};
+        const normalized: Resume = {
+          ...data,
+          resume_data: {
+            ...rawContent,
+            basics: {
+              name: rawBasics.name || contact.name || '',
+              email: rawBasics.email || contact.email || '',
+              summary: rawBasics.summary || rawContent.summary || '',
+            },
+            contact: {
+              name: rawBasics.name || contact.name || '',
+              email: rawBasics.email || contact.email || '',
+              phone: contact.phone || '',
+              location: contact.location || '',
+              website: contact.website || '',
+              linkedin: contact.linkedin || '',
+              github: contact.github || '',
+            },
+            summary: rawBasics.summary || rawContent.summary || '',
+            experience: (rawContent.experience || []).map((exp: any) => ({
+              ...exp,
+              title: exp.title || exp.position || '',
+              position: exp.position || exp.title || '',
+              company: exp.company || '',
+              start_date: exp.start_date || '',
+              end_date: exp.end_date || '',
+              description: exp.description || (Array.isArray(exp.highlights) ? exp.highlights.join('\n') : ''),
+            })),
+            education: (rawContent.education || []).map((edu: any) => ({
+              ...edu,
+              institution: edu.institution || '',
+              degree: edu.degree || '',
+              field_of_study: edu.field_of_study || '',
+              start_date: edu.start_date || '',
+              end_date: edu.end_date || '',
+            })),
+          },
+        };
+        setResume(normalized);
       } catch (err) {
         toast.error('Failed to load resume');
         router.push('/resumes');
@@ -45,9 +87,18 @@ export default function ResumeEditorPage() {
     const timer = setTimeout(async () => {
       setSaveStatus('saving');
       try {
+        const payloadData = {
+          ...resume.resume_data,
+          contact: {
+            ...(resume.resume_data?.contact || {}),
+            name: resume.resume_data?.basics?.name || '',
+            email: resume.resume_data?.basics?.email || '',
+          },
+          summary: resume.resume_data?.basics?.summary || '',
+        };
         await api.put(`/resumes/${resume.id}`, {
           title: resume.title,
-          resume_data: resume.resume_data,
+          resume_data: payloadData,
         });
         setSaveStatus('saved');
       } catch (err) {
@@ -63,9 +114,18 @@ export default function ResumeEditorPage() {
     if (!resume) return;
     setSaveStatus('saving');
     try {
+      const payloadData = {
+        ...resume.resume_data,
+        contact: {
+          ...(resume.resume_data?.contact || {}),
+          name: resume.resume_data?.basics?.name || '',
+          email: resume.resume_data?.basics?.email || '',
+        },
+        summary: resume.resume_data?.basics?.summary || '',
+      };
       await api.put(`/resumes/${resume.id}`, {
         title: resume.title,
-        resume_data: resume.resume_data,
+        resume_data: payloadData,
       });
       setSaveStatus('saved');
     } catch (err) {
@@ -84,6 +144,12 @@ export default function ResumeEditorPage() {
           ...(resume.resume_data?.basics || {}),
           [field]: value,
         },
+        contact: {
+          ...(resume.resume_data?.contact || {}),
+          ...(field === 'name' ? { name: value } : {}),
+          ...(field === 'email' ? { email: value } : {}),
+        },
+        ...(field === 'summary' ? { summary: value } : {}),
       },
     });
   };
@@ -97,7 +163,12 @@ export default function ResumeEditorPage() {
     if (!resume) return;
     const currentArray = resume.resume_data?.[arrayName] || [];
     const newArray = [...currentArray];
-    newArray[index] = { ...newArray[index], [field]: value };
+    const updatedItem = { ...newArray[index], [field]: value };
+    if (arrayName === 'experience') {
+      if (field === 'title') updatedItem.position = value;
+      if (field === 'position') updatedItem.title = value;
+    }
+    newArray[index] = updatedItem;
 
     setResume({
       ...resume,
@@ -113,7 +184,7 @@ export default function ResumeEditorPage() {
     const currentArray = resume.resume_data?.[arrayName] || [];
     const newItem =
       arrayName === 'experience'
-        ? { title: '', company: '', start_date: '', end_date: '', description: '' }
+        ? { title: '', position: '', company: '', start_date: '', end_date: '', description: '', highlights: [] }
         : { institution: '', degree: '', field_of_study: '', start_date: '', end_date: '' };
 
     setResume({
@@ -177,6 +248,15 @@ export default function ResumeEditorPage() {
             />
           </div>
           <div className="flex items-center gap-2.5">
+            <a
+              href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/resumes/${resume.id}/export/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="secondary" size="sm" leftIcon={<Download size={13} />}>
+                Export PDF
+              </Button>
+            </a>
             <Badge
               variant={saveStatus === 'saved' ? 'success' : saveStatus === 'saving' ? 'burnt' : 'neutral'}
               size="sm"

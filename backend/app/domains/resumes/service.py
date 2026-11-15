@@ -66,7 +66,7 @@ class ResumeService:
             raise HTTPException(status_code=404, detail="Resume not found")
         return version
 
-    async def update_resume(self, user_id: str, version_id: str, title: str, resume_data: dict):
+    async def update_resume(self, user_id: str, version_id: str, title: Optional[str] = None, resume_data: Optional[dict] = None):
         from fastapi import HTTPException
         version = await self.repository.update_version(UUID(version_id), title, resume_data)
         if not version:

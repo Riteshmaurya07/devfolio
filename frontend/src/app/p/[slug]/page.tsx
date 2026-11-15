@@ -4,12 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
-import { ShieldAlert, ExternalLink, ArrowLeft } from 'lucide-react';
-import { Badge, Button } from '@/components/ui';
+import { useAuthStore } from '@/store/authStore';
+import { ShieldAlert, ExternalLink, ArrowLeft, Code2, Settings, LayoutDashboard } from 'lucide-react';
+import { Badge, Button, ThemeToggle } from '@/components/ui';
 
 export default function PublicPortfolioPage() {
   const params = useParams();
   const slug = params.slug as string;
+  const { user: currentUser } = useAuthStore();
 
   const [portfolio, setPortfolio] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -30,27 +32,60 @@ export default function PublicPortfolioPage() {
     }
   };
 
+  const isOwner = Boolean(
+    currentUser &&
+      (currentUser.username === slug ||
+        currentUser.id === portfolio?.user_id ||
+        currentUser.username === portfolio?.slug)
+  );
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex items-center justify-center text-xs text-[var(--text-muted)] font-mono">
-        Loading developer portfolio...
+      <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col font-sans">
+        <header className="sticky top-0 z-50 h-16 bg-[var(--surface)] backdrop-blur-md border-b border-[var(--border-subtle)] px-4 sm:px-8 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#d9541e] flex items-center justify-center text-white">
+              <Code2 size={16} />
+            </div>
+            <span className="font-bold text-base tracking-tight text-[var(--text-primary)]">
+              Devfolio
+            </span>
+          </Link>
+          <ThemeToggle />
+        </header>
+        <div className="flex-1 flex items-center justify-center text-xs text-[var(--text-muted)] font-mono">
+          Loading developer portfolio...
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col items-center justify-center p-6 text-center">
-        <ShieldAlert size={40} className="text-[#d9541e] mb-3" />
-        <h1 className="text-xl font-bold tracking-tight mb-1">{error}</h1>
-        <p className="text-xs text-[var(--text-secondary)] mb-4">
-          The requested portfolio slug is unpublished or does not exist.
-        </p>
-        <Link href="/">
-          <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={13} />}>
-            Back to Home
-          </Button>
-        </Link>
+      <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col font-sans">
+        <header className="sticky top-0 z-50 h-16 bg-[var(--surface)] backdrop-blur-md border-b border-[var(--border-subtle)] px-4 sm:px-8 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#d9541e] flex items-center justify-center text-white">
+              <Code2 size={16} />
+            </div>
+            <span className="font-bold text-base tracking-tight text-[var(--text-primary)]">
+              Devfolio
+            </span>
+          </Link>
+          <ThemeToggle />
+        </header>
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <ShieldAlert size={40} className="text-[#d9541e] mb-3" />
+          <h1 className="text-xl font-bold tracking-tight mb-1">{error}</h1>
+          <p className="text-xs text-[var(--text-secondary)] mb-4">
+            The requested portfolio slug is unpublished or does not exist.
+          </p>
+          <Link href="/">
+            <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={13} />}>
+              Back to Home
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -71,7 +106,64 @@ export default function PublicPortfolioPage() {
 
   return (
     <div style={themeStyle} className="font-sans pb-24 transition-colors duration-200">
-      <header className="max-w-5xl mx-auto px-6 py-12 border-b border-[var(--border-color)]">
+      {/* Top Navigation Bar */}
+      <header className="sticky top-0 z-50 h-16 bg-[var(--surface)] backdrop-blur-md border-b border-[var(--border-subtle)] px-4 sm:px-8 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href={currentUser ? '/dashboard' : '/'} className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-lg bg-[#d9541e] flex items-center justify-center text-white transition-transform group-hover:scale-105">
+              <Code2 size={16} />
+            </div>
+            <span className="font-bold text-base tracking-tight text-[var(--text-primary)]">
+              Devfolio <span className="text-[#d9541e]">OS</span>
+            </span>
+          </Link>
+          {currentUser && (
+            <Link
+              href="/dashboard"
+              className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[#d9541e] transition-colors"
+            >
+              <ArrowLeft size={13} />
+              <span>Dashboard</span>
+            </Link>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          {currentUser ? (
+            <>
+              {isOwner && (
+                <Link href="/portfolio/builder">
+                  <Button variant="primary" size="sm" leftIcon={<Settings size={13} />}>
+                    <span>Edit Portfolio</span>
+                  </Button>
+                </Link>
+              )}
+              <Link href="/dashboard">
+                <Button variant="secondary" size="sm" leftIcon={<LayoutDashboard size={13} />}>
+                  <span>Dashboard</span>
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link href="/login">
+                <Button variant="ghost" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button variant="primary" size="sm">
+                  Get Started
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* Main Portfolio Header */}
+      <div className="max-w-5xl mx-auto px-6 py-12 border-b border-[var(--border-color)]">
         <div className="flex items-center gap-2 mb-2">
           <span className="w-2 h-2 rounded-full bg-[#d9541e]" />
           <span className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-secondary)]">
@@ -84,7 +176,7 @@ export default function PublicPortfolioPage() {
         <p className="text-[var(--text-secondary)] mt-2 text-xs max-w-2xl leading-relaxed">
           {portfolio.seo_description || 'Engineering portfolio, system architectures, and verified contributions.'}
         </p>
-      </header>
+      </div>
 
       <main className="max-w-5xl mx-auto px-6 py-12 space-y-12">
         {portfolio.projects && portfolio.projects.length > 0 && (

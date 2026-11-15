@@ -11,15 +11,54 @@ export interface User {
 export interface Resume {
   id: string;
   title: string;
-  user_id: string;
-  resume_data: {
-    basics: {
-      name: string;
-      email: string;
-      summary: string;
+  user_id?: string;
+  profile_id?: string;
+  version_number?: number;
+  is_active?: boolean;
+  template_name?: string;
+  content?: {
+    contact?: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      location?: string;
+      website?: string;
+      linkedin?: string;
+      github?: string;
     };
-    experience: any[];
-    education: any[];
+    basics?: {
+      name?: string;
+      email?: string;
+      summary?: string;
+    };
+    summary?: string;
+    skills?: string[];
+    experience?: any[];
+    education?: any[];
+    projects?: any[];
+    certifications?: any[];
+  };
+  resume_data?: {
+    basics?: {
+      name?: string;
+      email?: string;
+      summary?: string;
+    };
+    contact?: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      location?: string;
+      website?: string;
+      linkedin?: string;
+      github?: string;
+    };
+    summary?: string;
+    skills?: string[];
+    experience?: any[];
+    education?: any[];
+    projects?: any[];
+    certifications?: any[];
   };
   created_at: string;
   updated_at: string;
