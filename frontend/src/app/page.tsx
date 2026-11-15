@@ -32,7 +32,7 @@ export default function Home() {
               Sign In
             </Link>
             <Link
-              href="/login"
+              href="/register"
               className="px-5 py-2.5 text-sm font-medium rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 transition duration-200 flex items-center gap-2"
             >
               Get Started <ArrowRight className="w-4 h-4" />

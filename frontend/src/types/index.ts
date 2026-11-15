@@ -3,7 +3,9 @@ export interface User {
   username: string;
   email: string;
   avatar_url?: string;
-  is_onboarded: boolean;
+  is_onboarded?: boolean;
+  is_admin?: boolean;
+  is_suspended?: boolean;
 }
 
 export interface Resume {

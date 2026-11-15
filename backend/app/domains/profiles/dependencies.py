@@ -1,7 +1,8 @@
 from typing import Optional
 from fastapi import Depends, Request
 from app.domains.users.models import User
-from app.api.dependencies import get_current_user
+from app.domains.users.repository import UserRepository
+from app.api.dependencies import get_current_user, get_user_repo
 from app.domains.profiles.service import ProfileService
 from app.domains.profiles.repository import ProfileRepository
 from app.domains.profiles.models import Profile, VisibilityEnum
@@ -18,24 +19,34 @@ async def get_visible_profile(
     username: str,
     request: Request,
     service: ProfileService = Depends(get_profile_service),
+    user_repo: UserRepository = Depends(get_user_repo),
     db = Depends(get_db)
 ) -> Profile:
-    profile = await service.get_by_username(username)
+    # 1. Fetch profile; if not found, check if user exists to auto-create profile
+    try:
+        profile = await service.get_by_username(username)
+    except NotFoundError:
+        user = await user_repo.get_by_username(username)
+        if user:
+            profile = await service.get_or_create_profile(user.id, user.username, user.email)
+        else:
+            raise NotFoundError(message=f"Profile @{username} not found")
     
-    # Check optional current user from Authorization header
+    # 2. Check optional current user from Authorization header
     current_user: Optional[User] = None
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
         try:
-            current_user = await get_current_user(token=auth_header.split(" ")[1], user_repo=Depends(get_profile_repo))
+            current_user = await get_current_user(token=auth_header.split(" ")[1], user_repo=user_repo)
         except Exception:
             current_user = None
 
+    # 3. Visibility check
     if profile.visibility == VisibilityEnum.PRIVATE:
         if not current_user or current_user.id != profile.user_id:
             raise UnauthorizedError(message="This profile is private", details={"code": "FORBIDDEN"})
 
-    # Record view async path
+    # 4. Record view async path
     viewer_id = current_user.id if current_user else None
     viewer_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")

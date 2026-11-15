@@ -19,7 +19,7 @@ class SocialLinkResponse(SocialLinkBase):
 
 from pydantic import BaseModel, EmailStr, HttpUrl, Field, ConfigDict, field_validator
 
-RESERVED_USERNAMES = {"edit", "me", "api", "admin", "dashboard", "login", "register", "u", "settings", "profiles", "users", "health", "roadmaps", "resumes"}
+RESERVED_USERNAMES = {"edit", "me", "api", "dashboard", "login", "register", "u", "settings", "profiles", "users", "health", "roadmaps", "resumes"}
 
 class ProfileBase(BaseModel):
     name: str

@@ -153,9 +153,13 @@ The system leverages **Celery and Redis** to decouple notifications from the mai
 ## 5. API Design (FastAPI Routes)
 
 *   **Auth & Users:** 
-    *   `POST /api/auth/register` & `POST /api/auth/login`
-    *   `GET /api/auth/github` & `GET /api/auth/github/callback`
-    *   `GET /api/users/me` & `GET /api/users/{username}`
+    *   `POST /api/users/register` - Standard registration (Name/Username, Email, Password). Direct onboarding bypass directly to dashboard.
+    *   `POST /api/users/login` - Standard login (Email, Password) with JWT and Refresh Token issuing.
+    *   `GET /api/users/me` - Authenticated user details including `is_admin`, `is_suspended`, and preferences.
+    *   `GET /api/users/github/login` & `GET /api/users/github/callback` - OAuth integration for GitHub.
+    *   `POST /api/users/logout` - Session invalidation and cookie clearing.
+    *   **Frontend Routing Interlock:** Unauthenticated visitors land on `/` (Marketing/Landing page). Authenticated standard users are routed directly to `/dashboard`. Authenticated administrators (`is_admin === true`) are automatically routed to `/admin`.
+    *   **Automatic Account Bootstrapping (Startup Seed):** On startup, the backend automatically ensures both an administrator (`admin@devfolio.com` / `password123`) and a standard developer account (`user@devfolio.com` / `password123`) exist with hashed credentials.
 *   **Notifications:**
     *   `GET /api/notifications` - Get all user notifications.
     *   `PUT /api/notifications/{id}/read` - Mark a notification as read.

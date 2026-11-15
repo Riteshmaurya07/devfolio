@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Depends, status, Response, Request, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import get_db
 from app.domains.users.schemas import UserCreate, UserResponse, LoginRequest, TokenResponse, UserOnboardingRequest, ForgotPasswordRequest, ResetPasswordRequest
 from app.domains.users.service import AuthService
 from app.domains.users.models import User
+from app.domains.profiles.repository import ProfileRepository
+from app.domains.profiles.schemas import ProfileCreate
 from app.api.dependencies import get_auth_service, get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -9,9 +13,28 @@ router = APIRouter(prefix="/users", tags=["users"])
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     user_in: UserCreate, 
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
+    db: AsyncSession = Depends(get_db)
 ):
-    return await auth_service.register_user(user_in)
+    user = await auth_service.register_user(user_in)
+    
+    # Automatically initialize user's default public profile upon registration
+    try:
+        profile_repo = ProfileRepository(db)
+        if not await profile_repo.get_by_user_id(user.id):
+            await profile_repo.create(
+                user.id,
+                ProfileCreate(
+                    name=user.username,
+                    username=user.username,
+                    email=user.email
+                )
+            )
+    except Exception as e:
+        # Do not fail registration if profile creation has non-critical issue
+        pass
+
+    return user
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
@@ -21,7 +44,14 @@ async def login(
 ):
     user = await auth_service.authenticate_user(login_data)
     access_token = auth_service.create_access_token(
-        data={"sub": str(user.id), "email": user.email, "is_onboarded": user.is_onboarded}
+        data={
+            "sub": str(user.id),
+            "email": user.email,
+            "username": user.username,
+            "is_onboarded": user.is_onboarded,
+            "is_admin": user.is_admin,
+            "is_suspended": user.is_suspended
+        }
     )
     
     from app.core.config import settings
@@ -139,7 +169,14 @@ async def github_callback(
             # Optional: update avatar_url directly in DB if we added it to model
             
         jwt_token = auth_service.create_access_token(
-            data={"sub": str(user.id), "email": user.email, "is_onboarded": user.is_onboarded}
+            data={
+                "sub": str(user.id),
+                "email": user.email,
+                "username": user.username,
+                "is_onboarded": user.is_onboarded,
+                "is_admin": user.is_admin,
+                "is_suspended": user.is_suspended
+            }
         )
         
         from datetime import timedelta
@@ -184,7 +221,14 @@ async def refresh_token(
             
         # Issue new access token
         access_token = auth_service.create_access_token(
-            data={"sub": str(user.id), "email": user.email, "is_onboarded": user.is_onboarded}
+            data={
+                "sub": str(user.id),
+                "email": user.email,
+                "username": user.username,
+                "is_onboarded": user.is_onboarded,
+                "is_admin": user.is_admin,
+                "is_suspended": user.is_suspended
+            }
         )
         
         # Issue new refresh token
