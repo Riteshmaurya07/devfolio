@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { Code2, ArrowRight } from 'lucide-react';
-import { GithubIcon, GoogleIcon } from '@/components/ui';
+import { Button, Input, Card, GithubIcon, GoogleIcon, ThemeToggle } from '@/components/ui';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -24,27 +24,22 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // 1. Create User (backend user_in has username, email, password)
-      // We pass the user's name as username (sanitized for slug compatibility if needed)
       const usernameCandidate = name.trim().replace(/\s+/g, '_').toLowerCase();
-      
+
       await api.post('/users/register', {
         username: usernameCandidate || name.trim(),
         email: email.trim(),
-        password: password
+        password: password,
       });
 
-      // 2. Auto-login User
       const response = await api.post('/users/login', {
         email: email.trim(),
-        password: password
+        password: password,
       });
       const { access_token } = response.data;
 
-      // 3. Set session cookie for proxy middleware
       document.cookie = `token=${access_token}; path=/; max-age=86400`;
 
-      // 4. Get User details & set state
       const userResponse = await api.get('/users/me', {
         headers: { Authorization: `Bearer ${access_token}` },
       });
@@ -53,7 +48,6 @@ export default function RegisterPage() {
       login(userData, access_token);
       toast.success('Account created successfully');
 
-      // Admin or User redirection
       if (userData.is_admin) {
         router.push('/admin');
       } else {
@@ -77,121 +71,142 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 text-slate-100">
-      <div className="max-w-md w-full space-y-8 bg-slate-900/90 border border-slate-800 p-8 rounded-2xl shadow-2xl backdrop-blur-sm">
-        <div className="text-center">
-          <Link href="/" className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <Code2 className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
-              Devfolio OS
-            </span>
-          </Link>
-          <h2 className="text-3xl font-extrabold text-white">Create an Account</h2>
-          <p className="mt-2 text-sm text-slate-400">
-            Already have an account?{' '}
-            <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-semibold underline">
-              Sign in
-            </Link>
-          </p>
-        </div>
-
-        <form className="mt-8 space-y-4" onSubmit={handleRegister}>
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Full Name / Username</label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              required
-              className="w-full px-3.5 py-2.5 border border-slate-700 placeholder-slate-500 text-white rounded-xl bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition"
-              placeholder="Aditya Raj"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={loading}
-            />
+    <div className="min-h-screen flex flex-col justify-between bg-[var(--bg-canvas)] py-12 px-4 sm:px-6 lg:px-8 text-[var(--text-primary)] transition-colors duration-200">
+      {/* Top Bar with Brand & Theme Toggle */}
+      <div className="max-w-md w-full mx-auto flex items-center justify-between mb-4">
+        <Link href="/" className="inline-flex items-center gap-2 group">
+          <div className="w-8 h-8 rounded-lg bg-[#d9541e] text-white flex items-center justify-center font-bold text-sm shadow-sm transition-transform group-hover:scale-105">
+            <Code2 size={18} />
           </div>
+          <span className="font-bold text-base tracking-tight text-[var(--text-primary)]">
+            Devfolio
+          </span>
+        </Link>
+        <ThemeToggle />
+      </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Email Address</label>
-            <input
-              id="email-address"
-              name="email"
-              type="email"
-              required
-              className="w-full px-3.5 py-2.5 border border-slate-700 placeholder-slate-500 text-white rounded-xl bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition"
-              placeholder="you@domain.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              className="w-full px-3.5 py-2.5 border border-slate-700 placeholder-slate-500 text-white rounded-xl bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-            />
+      {/* Main Card */}
+      <div className="max-w-md w-full mx-auto">
+        <Card className="p-8 shadow-sm space-y-6">
+          <div className="text-left space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+              Create an account
+            </h1>
+            <p className="text-xs text-[var(--text-secondary)]">
+              Join Devfolio to synchronize your engineering trajectory.
+            </p>
           </div>
 
           {error && (
-            <p className="text-red-400 text-sm text-center bg-red-950/40 p-2.5 rounded-lg border border-red-800/50">
+            <div className="p-3 text-xs rounded-md bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400">
               {error}
-            </p>
+            </div>
           )}
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition shadow-lg shadow-indigo-600/30 disabled:opacity-50"
-            >
-              {loading ? 'Creating account...' : 'Register Account'}
-              {!loading && <ArrowRight className="w-4 h-4" />}
-            </button>
-          </div>
-        </form>
+          <form className="space-y-4" onSubmit={handleRegister}>
+            <div>
+              <Input
+                label="Full Name or Username"
+                id="name"
+                name="name"
+                type="text"
+                required
+                placeholder="Ada Lovelace"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={loading}
+              />
+            </div>
 
-        <div className="mt-6">
-          <div className="relative">
+            <div>
+              <Input
+                label="Email Address"
+                id="email-address"
+                name="email"
+                type="email"
+                required
+                placeholder="ada@domain.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <Input
+                label="Password (min 8 characters)"
+                id="password"
+                name="password"
+                type="password"
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              isLoading={loading}
+              rightIcon={!loading ? <ArrowRight size={14} /> : undefined}
+            >
+              Create Account
+            </Button>
+          </form>
+
+          {/* Social Divider */}
+          <div className="relative pt-2">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-800"></div>
+              <div className="w-full border-t border-[var(--border-subtle)]" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="px-3 bg-slate-900 text-slate-400">Or sign up with</span>
+              <span className="px-3 bg-[var(--surface)] text-[var(--text-muted)] font-mono">
+                or continue with
+              </span>
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <button
+          {/* Social Buttons */}
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="secondary"
               onClick={handleGithubLogin}
               disabled={loading}
               type="button"
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-[var(--border-subtle)] rounded-lg shadow-sm bg-[var(--surface)] text-sm font-medium text-[var(--text-primary)] hover:border-[var(--border-strong)] transition"
+              leftIcon={<GithubIcon size={16} />}
             >
-              <GithubIcon size={18} />
               GitHub
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="secondary"
               onClick={handleGoogleLogin}
               disabled={loading}
               type="button"
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-[var(--border-subtle)] rounded-lg shadow-sm bg-[var(--surface)] text-sm font-medium text-[var(--text-primary)] hover:border-[var(--border-strong)] transition"
+              leftIcon={<GoogleIcon size={16} />}
             >
-              <GoogleIcon size={18} />
               Google
-            </button>
+            </Button>
           </div>
-        </div>
+
+          {/* Sign in link */}
+          <p className="text-center text-xs text-[var(--text-secondary)] pt-2 border-t border-[var(--border-subtle)]">
+            Already have an account?{' '}
+            <Link
+              href="/login"
+              className="text-[#d9541e] hover:underline font-semibold"
+            >
+              Sign in
+            </Link>
+          </p>
+        </Card>
+      </div>
+
+      {/* Footer */}
+      <div className="max-w-md w-full mx-auto text-center text-xs text-[var(--text-muted)] mt-6">
+        By registering, you agree to technical terms and privacy policies.
       </div>
     </div>
   );

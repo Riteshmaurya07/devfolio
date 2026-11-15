@@ -3,18 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
-import { Bot, Send, Plus, Sparkles, MessageSquare, Shield, RefreshCw, AlertCircle } from 'lucide-react';
+import { Bot, Send, Plus, Sparkles, Shield, AlertCircle } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, Button } from '@/components/ui';
 
 export default function AICareerAdvisorPage() {
   const [conversations, setConversations] = useState<any[]>([]);
   const [activeConv, setActiveConv] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
   const [streaming, setStreaming] = useState(false);
   const [showContextDrawer, setShowContextDrawer] = useState(false);
 
-  // Preset Mode State
   const [mode, setMode] = useState('career_advice');
 
   useEffect(() => {
@@ -43,9 +43,9 @@ export default function AICareerAdvisorPage() {
     try {
       const res = await api.post('/ai/conversations', {
         title: `${selectedMode.replace('_', ' ').toUpperCase()} Session`,
-        mode: selectedMode
+        mode: selectedMode,
       });
-      setConversations(prev => [res.data, ...prev]);
+      setConversations((prev) => [res.data, ...prev]);
       selectConversation(res.data);
     } catch (err) {
       console.error(err);
@@ -57,7 +57,7 @@ export default function AICareerAdvisorPage() {
     setMode(conv.mode);
     try {
       const res = await api.get(`/ai/conversations/${conv.id}/messages`);
-      setMessages(res.data);
+      setMessages(res.data || []);
     } catch (err) {
       console.error(err);
     }
@@ -69,10 +69,9 @@ export default function AICareerAdvisorPage() {
 
     const userText = inputMessage;
     setInputMessage('');
-    
-    // Optimistic UI append
+
     const tempUserMsg = { id: Date.now().toString(), role: 'user', content: userText, status: 'complete' };
-    setMessages(prev => [...prev, tempUserMsg]);
+    setMessages((prev) => [...prev, tempUserMsg]);
     setStreaming(true);
 
     try {
@@ -80,9 +79,9 @@ export default function AICareerAdvisorPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({ conversation_id: activeConv.id, message: userText })
+        body: JSON.stringify({ conversation_id: activeConv.id, message: userText }),
       });
 
       const reader = response.body?.getReader();
@@ -90,7 +89,7 @@ export default function AICareerAdvisorPage() {
       let assistantText = '';
 
       const tempAssistantMsg = { id: (Date.now() + 1).toString(), role: 'assistant', content: '', status: 'complete' };
-      setMessages(prev => [...prev, tempAssistantMsg]);
+      setMessages((prev) => [...prev, tempAssistantMsg]);
 
       while (reader) {
         const { value, done } = await reader.read();
@@ -109,11 +108,11 @@ export default function AICareerAdvisorPage() {
                 const parsed = JSON.parse(token);
                 if (parsed.text !== undefined) parsedText = parsed.text;
               } catch (e) {
-                // Ignore, use raw token
+                // Raw token fallback
               }
               assistantText += parsedText;
-              setMessages(prev =>
-                prev.map(m => (m.id === tempAssistantMsg.id ? { ...m, content: assistantText } : m))
+              setMessages((prev) =>
+                prev.map((m) => (m.id === tempAssistantMsg.id ? { ...m, content: assistantText } : m))
               );
             }
           }
@@ -126,139 +125,213 @@ export default function AICareerAdvisorPage() {
     }
   };
 
+  const MODES = [
+    { id: 'career_advice', label: 'Career Advisor' },
+    { id: 'mock_interview', label: 'Mock Interviewer' },
+    { id: 'code_review', label: 'Code Reviewer' },
+    { id: 'system_design', label: 'System Design Architect' },
+  ];
+
   if (loading) {
-    return <DashboardShell><div className="text-white">Loading AI Career Advisor...</div></DashboardShell>;
+    return (
+      <DashboardShell>
+        <div className="py-12 text-center text-xs text-[var(--text-muted)]">
+          Loading AI Career Advisor...
+        </div>
+      </DashboardShell>
+    );
   }
 
   return (
     <DashboardShell>
-      <div className="max-w-6xl mx-auto h-[calc(100vh-120px)] flex gap-6 pb-6">
-        {/* Left Sidebar: Conversations */}
-        <div className="w-80 bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between hidden md:flex">
+      <div className="max-w-7xl mx-auto h-[calc(100vh-140px)] flex gap-6 pb-4">
+        {/* Left Sidebar: Sessions & Modes */}
+        <Card className="w-72 p-4 flex flex-col justify-between hidden md:flex shrink-0">
           <div className="space-y-4">
-            <button
+            <Button
+              variant="primary"
+              size="sm"
+              fullWidth
               onClick={() => createNewConversation(mode)}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30"
+              leftIcon={<Plus size={14} />}
             >
-              <Plus className="w-4 h-4" /> New AI Session
-            </button>
+              New AI Session
+            </Button>
 
             <div className="space-y-1">
-              <p className="text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider px-2">Preset Modes</p>
-              {[
-                { id: 'career_advice', label: 'Career Advisor' },
-                { id: 'mock_interview', label: 'Mock Interviewer' },
-                { id: 'code_review', label: 'Code Reviewer' },
-                { id: 'system_design', label: 'System Design Architect' }
-              ].map(m => (
-                <button
-                  key={m.id}
-                  onClick={() => { setMode(m.id); createNewConversation(m.id); }}
-                  className={`w-full p-2.5 rounded-xl text-left text-xs font-semibold transition ${mode === m.id ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/40' : 'text-slate-400 hover:text-white'}`}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="pt-4 border-t border-slate-800 space-y-1">
-              <p className="text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider px-2">History</p>
-              <div className="max-h-64 overflow-y-auto space-y-1">
-                {conversations.map(c => (
+              <span className="text-[10px] font-mono font-semibold text-[var(--text-muted)] uppercase tracking-wider px-1">
+                Consultation Modes
+              </span>
+              {MODES.map((m) => {
+                const isSelected = mode === m.id;
+                return (
                   <button
-                    key={c.id}
-                    onClick={() => selectConversation(c)}
-                    className={`w-full p-2.5 rounded-xl text-left text-xs transition truncate ${c.id === activeConv?.id ? 'bg-slate-800 text-white font-semibold' : 'text-slate-400 hover:text-slate-200'}`}
+                    key={m.id}
+                    onClick={() => {
+                      setMode(m.id);
+                      createNewConversation(m.id);
+                    }}
+                    className={`w-full px-3 py-2 rounded-lg text-left text-xs font-semibold transition-colors duration-150 ${
+                      isSelected
+                        ? 'bg-[#d9541e]/10 text-[#d9541e] border border-[#d9541e]/30'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
+                    }`}
                   >
-                    {c.title}
+                    {m.label}
                   </button>
-                ))}
+                );
+              })}
+            </div>
+
+            <div className="pt-3 border-t border-[var(--border-subtle)] space-y-1">
+              <span className="text-[10px] font-mono font-semibold text-[var(--text-muted)] uppercase tracking-wider px-1">
+                Session History
+              </span>
+              <div className="max-h-56 overflow-y-auto space-y-1">
+                {conversations.map((c) => {
+                  const isCurrent = c.id === activeConv?.id;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => selectConversation(c)}
+                      className={`w-full px-3 py-2 rounded-lg text-left text-xs transition-colors duration-150 truncate ${
+                        isCurrent
+                          ? 'bg-[var(--surface-hover)] text-[var(--text-primary)] font-bold border border-[var(--border-subtle)]'
+                          : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      {c.title}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
-        </div>
+        </Card>
 
-        {/* Main Chat Drawer */}
-        <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col justify-between overflow-hidden">
+        {/* Main Chat Area */}
+        <Card className="flex-1 flex flex-col justify-between overflow-hidden">
           {/* Header */}
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/80 backdrop-blur-sm">
+          <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--surface)]">
             <div className="flex items-center gap-3">
-              <Bot className="w-6 h-6 text-indigo-400" />
+              <div className="w-8 h-8 rounded-lg bg-[#d9541e]/15 text-[#d9541e] flex items-center justify-center font-bold">
+                <Bot size={18} />
+              </div>
               <div>
-                <h2 className="text-sm font-bold text-white">{activeConv?.title || 'AI Career Advisor'}</h2>
-                <span className="text-[10px] text-indigo-300 uppercase font-mono">{activeConv?.mode || mode}</span>
+                <h2 className="text-sm font-bold text-[var(--text-primary)]">
+                  {activeConv?.title || 'AI Career Advisor'}
+                </h2>
+                <span className="text-[10px] text-[#d9541e] uppercase font-mono font-semibold">
+                  {activeConv?.mode || mode}
+                </span>
               </div>
             </div>
 
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => setShowContextDrawer(!showContextDrawer)}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 flex items-center gap-1.5"
+              leftIcon={<Shield size={13} />}
             >
-              <Shield className="w-3.5 h-3.5 text-indigo-400" /> What I Know About You
-            </button>
+              Context Profile
+            </Button>
           </div>
 
-          {/* Messages List */}
+          {/* Messages */}
           <div className="flex-1 p-6 overflow-y-auto space-y-4">
-            {messages.map(m => (
-              <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-xl p-4 rounded-2xl text-xs leading-relaxed space-y-1 ${m.role === 'user' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'bg-slate-800 text-slate-200 border border-slate-700'}`}>
-                  <p className="whitespace-pre-wrap">{m.content}</p>
-                  {m.status === 'interrupted' && (
-                    <span className="text-[10px] text-amber-400 font-semibold flex items-center gap-1 mt-1">
-                      <AlertCircle className="w-3 h-3" /> Stream Interrupted
-                    </span>
-                  )}
-                </div>
+            {messages.length === 0 ? (
+              <div className="py-12 text-center text-xs text-[var(--text-muted)]">
+                Ask your AI advisor any technical career, system design, or code review question.
               </div>
-            ))}
+            ) : (
+              messages.map((m) => {
+                const isUser = m.role === 'user';
+                return (
+                  <div key={m.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      className={`max-w-xl p-4 rounded-lg text-xs leading-relaxed space-y-1 shadow-sm ${
+                        isUser
+                          ? 'bg-[#d9541e] text-white'
+                          : 'bg-[var(--surface-hover)] text-[var(--text-primary)] border border-[var(--border-subtle)]'
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap">{m.content}</p>
+                      {m.status === 'interrupted' && (
+                        <span className="text-[10px] text-amber-500 font-semibold flex items-center gap-1 mt-1">
+                          <AlertCircle size={12} /> Response Stream Interrupted
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {/* Input Box */}
-          <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-800 bg-slate-900/90 flex gap-3">
+          <form
+            onSubmit={handleSendMessage}
+            className="p-4 border-t border-[var(--border-subtle)] bg-[var(--surface)] flex gap-2.5"
+          >
             <input
               type="text"
               value={inputMessage}
-              onChange={e => setInputMessage(e.target.value)}
-              placeholder={`Ask your AI Advisor (${activeConv?.mode || mode})...`}
-              className="flex-1 px-4 py-2.5 border border-slate-700 rounded-xl bg-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder={`Ask advice on ${activeConv?.mode || mode}...`}
+              className="flex-1 px-3.5 py-2 border border-[var(--border-subtle)] rounded-lg bg-[var(--bg-canvas)] text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#d9541e]"
             />
-            <button
+            <Button
               type="submit"
+              variant="primary"
+              size="sm"
               disabled={streaming || !inputMessage.trim()}
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-600/30 disabled:opacity-50"
+              isLoading={streaming}
+              rightIcon={<Send size={13} />}
             >
-              <Send className="w-4 h-4" /> Send
-            </button>
+              Send
+            </Button>
           </form>
-        </div>
+        </Card>
 
-        {/* "What I Know About You" Live Context Drawer */}
+        {/* Live Context Drawer */}
         {showContextDrawer && (
-          <div className="w-80 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 overflow-y-auto text-xs text-slate-300">
-            <h3 className="font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-400" /> Active Context Sources
+          <Card className="w-72 p-4 space-y-3 overflow-y-auto text-xs shrink-0">
+            <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
+              <Sparkles size={14} className="text-[#d9541e]" />
+              Active Context Sources
             </h3>
-
             {activeConv?.context_snapshot ? (
-              <div className="space-y-3">
-                <div className="p-3 rounded-xl bg-slate-800 border border-slate-700">
-                  <p className="font-semibold text-indigo-300 mb-1">Developer Profile</p>
-                  <p>{activeConv.context_snapshot.profile?.name} ({activeConv.context_snapshot.profile?.current_position})</p>
+              <div className="space-y-2">
+                <div className="p-3 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-subtle)]">
+                  <span className="font-bold text-[var(--text-primary)] block text-[11px]">
+                    Developer Profile
+                  </span>
+                  <span className="text-[11px] text-[var(--text-secondary)]">
+                    {activeConv.context_snapshot.profile?.name} (
+                    {activeConv.context_snapshot.profile?.current_position})
+                  </span>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-800 border border-slate-700">
-                  <p className="font-semibold text-indigo-300 mb-1">Resume</p>
-                  <p>{activeConv.context_snapshot.resume?.title} ({activeConv.context_snapshot.resume?.template} template)</p>
+                <div className="p-3 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-subtle)]">
+                  <span className="font-bold text-[var(--text-primary)] block text-[11px]">
+                    Resume Attached
+                  </span>
+                  <span className="text-[11px] text-[var(--text-secondary)]">
+                    {activeConv.context_snapshot.resume?.title}
+                  </span>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-800 border border-slate-700">
-                  <p className="font-semibold text-indigo-300 mb-1">Coding Dashboard</p>
-                  <p>{activeConv.context_snapshot.coding?.total_solved} Problems Solved</p>
+                <div className="p-3 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-subtle)]">
+                  <span className="font-bold text-[var(--text-primary)] block text-[11px]">
+                    Coding Stats
+                  </span>
+                  <span className="text-[11px] text-[var(--text-secondary)]">
+                    {activeConv.context_snapshot.coding?.total_solved} Problems Solved
+                  </span>
                 </div>
               </div>
             ) : (
-              <p className="text-slate-500">No snapshot context found.</p>
+              <p className="text-xs text-[var(--text-muted)]">No snapshot context recorded.</p>
             )}
-          </div>
+          </Card>
         )}
       </div>
     </DashboardShell>

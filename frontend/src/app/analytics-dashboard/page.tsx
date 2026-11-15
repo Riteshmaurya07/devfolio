@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
-import { BarChart3, Eye, Download, Globe, Clock, ShieldCheck } from 'lucide-react';
+import { BarChart3, Eye, Download, Globe, ShieldCheck } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge, StatCard } from '@/components/ui';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 
-const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+const ACCENT_COLORS = ['#d9541e', '#2a2a2a', '#b34215', '#f59e0b', '#10b981'];
 
 const SAMPLE_TRENDS = [
   { date: 'Mon', views: 24, downloads: 4 },
@@ -15,7 +16,7 @@ const SAMPLE_TRENDS = [
   { date: 'Thu', views: 42, downloads: 8 },
   { date: 'Fri', views: 68, downloads: 15 },
   { date: 'Sat', views: 30, downloads: 5 },
-  { date: 'Sun', views: 45, downloads: 9 }
+  { date: 'Sun', views: 45, downloads: 9 },
 ];
 
 export default function AnalyticsDashboardPage() {
@@ -37,96 +38,162 @@ export default function AnalyticsDashboardPage() {
     }
   };
 
-  if (loading) {
-    return <DashboardShell><div className="text-white">Loading Analytics Dashboard...</div></DashboardShell>;
-  }
-
   const countryData = summary?.country_distribution
     ? Object.entries(summary.country_distribution).map(([name, value]) => ({ name, value }))
-    : [{ name: 'US', value: 80 }, { name: 'IN', value: 40 }];
+    : [{ name: 'United States', value: 80 }, { name: 'India', value: 40 }, { name: 'Germany', value: 25 }];
 
   return (
     <DashboardShell>
-      <div className="max-w-6xl mx-auto space-y-8 pb-16">
+      <div className="max-w-7xl mx-auto space-y-8 pb-16">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-indigo-400" /> Analytics Dashboard
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">Pre-computed rollups, traffic trends, country distribution, and privacy-compliant IP hashing.</p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
-            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5"><Eye className="w-4 h-4 text-indigo-400" /> Total Views</span>
-            <p className="text-3xl font-extrabold text-white">{summary?.total_views || 120}</p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
-            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5"><Download className="w-4 h-4 text-emerald-400" /> Resume Downloads</span>
-            <p className="text-3xl font-extrabold text-emerald-400">{summary?.resume_downloads || 15}</p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
-            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5"><Globe className="w-4 h-4 text-amber-400" /> GitHub Clicks</span>
-            <p className="text-3xl font-extrabold text-amber-400">{summary?.github_clicks || 42}</p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[var(--border-subtle)]">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                Portfolio Analytics
+              </h1>
+              <Badge variant="burnt" size="sm">
+                Live Telemetry
+              </Badge>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
+              Hourly aggregate rollups, country distribution, resume downloads, and hashed privacy compliance.
+            </p>
           </div>
         </div>
 
-        {/* Traffic Trends Chart */}
-        <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-          <h2 className="text-lg font-bold text-white">Traffic Trends (UTC Rollup)</h2>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={SAMPLE_TRENDS}>
-                <defs>
-                  <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="date" stroke="#64748b" />
-                <YAxis stroke="#64748b" />
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#fff' }} />
-                <Area type="monotone" dataKey="views" stroke="#6366f1" fillOpacity={1} fill="url(#colorViews)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        {/* Stat Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard
+            title="Total Portfolio Views"
+            value={summary?.total_views || 120}
+            change="+18% vs last week"
+            changeType="positive"
+            subtext="De-duplicated by 5-minute sliding IP window"
+            accent
+            icon={<Eye size={18} />}
+          />
+          <StatCard
+            title="Resume Downloads"
+            value={summary?.resume_downloads || 15}
+            change="+4 today"
+            changeType="positive"
+            subtext="PDF and JSON resume exports fetched by recruiters"
+            icon={<Download size={18} />}
+          />
+          <StatCard
+            title="GitHub Click-Throughs"
+            value={summary?.github_clicks || 42}
+            change="Strong conversion"
+            changeType="positive"
+            subtext="Outbound referrals directly to your repositories"
+            icon={<Globe size={18} />}
+          />
         </div>
 
-        {/* Country Distribution & Privacy Card */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-            <h2 className="text-lg font-bold text-white">Visitor Country Distribution</h2>
-            <div className="h-48 w-full flex items-center justify-center">
+        {/* Traffic Chart */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Visitor Trends (7-Day Rollup)</CardTitle>
+                <CardDescription>
+                  Aggregated page requests logged across your public developer portfolio
+                </CardDescription>
+              </div>
+              <Badge variant="neutral" size="sm">
+                UTC Normalized
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={countryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
-                    {countryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#fff' }} />
-                </PieChart>
+                <AreaChart data={SAMPLE_TRENDS}>
+                  <defs>
+                    <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#d9541e" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#d9541e" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" stroke="currentColor" className="text-[11px] text-[var(--text-muted)] font-mono" />
+                  <YAxis stroke="currentColor" className="text-[11px] text-[var(--text-muted)] font-mono" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'var(--surface)',
+                      borderColor: 'var(--border-subtle)',
+                      borderRadius: '0.5rem',
+                      color: 'var(--text-primary)',
+                      fontSize: '12px',
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="views"
+                    stroke="#d9541e"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorViews)"
+                  />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 flex flex-col justify-between">
-            <div className="space-y-2">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-400" /> Privacy & Ingestion Guards
-              </h2>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Raw IP addresses are anonymized to SHA-256 hashes at write time for privacy compliance. View counts enforce a 5-minute sliding window per IP to suppress duplicate reloads.
+        {/* Country Breakdown & Privacy Card */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Geographic Origin Distribution</CardTitle>
+              <CardDescription>Approximate country breakdown mapped from inbound traffic</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-48 w-full flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={countryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
+                      {countryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={ACCENT_COLORS[index % ACCENT_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'var(--surface)',
+                        borderColor: 'var(--border-subtle)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '12px',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="flex flex-col justify-between p-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={20} className="text-[#d9541e]" />
+                <h3 className="text-base font-bold text-[var(--text-primary)]">
+                  Privacy & Ingestion Guards
+                </h3>
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                Raw client IP addresses are transformed to SHA-256 digests in memory prior to database insertion. A sliding 5-minute deduplication window prevents bot inflations and accidental refresh spamming.
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-800 border border-slate-700 text-xs font-mono text-slate-300">
-              SHA-256 Anonymization Active
+            <div className="mt-4 p-3.5 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-subtle)] flex items-center justify-between">
+              <span className="text-xs font-mono font-semibold text-[var(--text-primary)]">
+                SHA-256 Ingestion Guard
+              </span>
+              <Badge variant="success" size="sm">
+                Enforced
+              </Badge>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </DashboardShell>

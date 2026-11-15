@@ -3,14 +3,37 @@
 import React, { useState, useEffect } from 'react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
-import { FileText, Download, Upload, Sparkles, CheckCircle, Layers, Layout, GripVertical, Plus, Trash2 } from 'lucide-react';
+import {
+  FileText,
+  Download,
+  Upload,
+  Sparkles,
+  CheckCircle,
+  Layers,
+  Layout,
+  GripVertical,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Badge,
+  Button,
+  Input,
+  Textarea,
+  Select,
+} from '@/components/ui';
 
 const TEMPLATES = [
-  { name: 'modern', label: 'Modern Indigo' },
-  { name: 'professional', label: 'Professional Slate' },
-  { name: 'minimal', label: 'Minimal Black' },
-  { name: 'corporate', label: 'Corporate Blue' },
-  { name: 'creative', label: 'Creative Purple' }
+  { name: 'modern', label: 'Modern Editorial' },
+  { name: 'professional', label: 'Clean Monospace' },
+  { name: 'minimal', label: 'Minimal Architectural' },
+  { name: 'corporate', label: 'Standard ATS' },
+  { name: 'creative', label: 'Technical Showcase' },
 ];
 
 import {
@@ -50,51 +73,124 @@ interface ProjectItem {
   [key: string]: unknown;
 }
 
-const SortableExperienceItem = ({ id, exp, onUpdate, onRemove }: { id: string; exp: ExperienceItem; onUpdate: (data: ExperienceItem) => void; onRemove: () => void }) => {
+const SortableExperienceItem = ({
+  id,
+  exp,
+  onUpdate,
+  onRemove,
+}: {
+  id: string;
+  exp: ExperienceItem;
+  onUpdate: (data: ExperienceItem) => void;
+  onRemove: () => void;
+}) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
   const style = { transform: CSS.Transform.toString(transform), transition };
   return (
-    <div ref={setNodeRef} style={style} className="p-4 bg-slate-800 border border-slate-700 rounded-xl mb-3 flex gap-3 group">
-      <div {...attributes} {...listeners} className="cursor-grab text-slate-500 hover:text-indigo-400 pt-2">
-        <GripVertical className="w-5 h-5" />
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-4 bg-[var(--surface-hover)] border border-[var(--border-subtle)] rounded-lg mb-3 flex gap-3 group"
+    >
+      <div {...attributes} {...listeners} className="cursor-grab text-[var(--text-muted)] hover:text-[#d9541e] pt-2">
+        <GripVertical size={16} />
       </div>
       <div className="flex-1 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input type="text" placeholder="Position" value={exp.position || ''} onChange={e => onUpdate({ ...exp, position: e.target.value })} className="w-full px-3 py-1.5 border border-slate-700 rounded-lg bg-slate-900 text-sm text-white" />
-          <input type="text" placeholder="Company" value={exp.company || ''} onChange={e => onUpdate({ ...exp, company: e.target.value })} className="w-full px-3 py-1.5 border border-slate-700 rounded-lg bg-slate-900 text-sm text-white" />
+          <input
+            type="text"
+            placeholder="Position"
+            value={exp.position || ''}
+            onChange={(e) => onUpdate({ ...exp, position: e.target.value })}
+            className="w-full px-3 py-1.5 border border-[var(--border-subtle)] rounded-lg bg-[var(--bg-canvas)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#d9541e]"
+          />
+          <input
+            type="text"
+            placeholder="Company"
+            value={exp.company || ''}
+            onChange={(e) => onUpdate({ ...exp, company: e.target.value })}
+            className="w-full px-3 py-1.5 border border-[var(--border-subtle)] rounded-lg bg-[var(--bg-canvas)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#d9541e]"
+          />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input type="text" placeholder="Start Date" value={exp.start_date || ''} onChange={e => onUpdate({ ...exp, start_date: e.target.value })} className="w-full px-3 py-1.5 border border-slate-700 rounded-lg bg-slate-900 text-sm text-white" />
-          <input type="text" placeholder="End Date" value={exp.end_date || ''} onChange={e => onUpdate({ ...exp, end_date: e.target.value })} className="w-full px-3 py-1.5 border border-slate-700 rounded-lg bg-slate-900 text-sm text-white" />
+          <input
+            type="text"
+            placeholder="Start Date"
+            value={exp.start_date || ''}
+            onChange={(e) => onUpdate({ ...exp, start_date: e.target.value })}
+            className="w-full px-3 py-1.5 border border-[var(--border-subtle)] rounded-lg bg-[var(--bg-canvas)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#d9541e]"
+          />
+          <input
+            type="text"
+            placeholder="End Date"
+            value={exp.end_date || ''}
+            onChange={(e) => onUpdate({ ...exp, end_date: e.target.value })}
+            className="w-full px-3 py-1.5 border border-[var(--border-subtle)] rounded-lg bg-[var(--bg-canvas)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#d9541e]"
+          />
         </div>
       </div>
-      <button onClick={onRemove} className="text-slate-500 hover:text-red-400 p-2">
-        <Trash2 className="w-4 h-4" />
+      <button
+        onClick={onRemove}
+        className="text-[var(--text-muted)] hover:text-red-500 p-2 transition-colors"
+        aria-label="Remove Experience"
+      >
+        <Trash2 size={14} />
       </button>
     </div>
   );
 };
 
-const SortableProjectItem = ({ id, proj, onUpdate, onRemove }: { id: string; proj: ProjectItem; onUpdate: (data: ProjectItem) => void; onRemove: () => void }) => {
+const SortableProjectItem = ({
+  id,
+  proj,
+  onUpdate,
+  onRemove,
+}: {
+  id: string;
+  proj: ProjectItem;
+  onUpdate: (data: ProjectItem) => void;
+  onRemove: () => void;
+}) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
   const style = { transform: CSS.Transform.toString(transform), transition };
   return (
-    <div ref={setNodeRef} style={style} className="p-4 bg-slate-800 border border-slate-700 rounded-xl mb-3 flex gap-3 group">
-      <div {...attributes} {...listeners} className="cursor-grab text-slate-500 hover:text-indigo-400 pt-2">
-        <GripVertical className="w-5 h-5" />
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-4 bg-[var(--surface-hover)] border border-[var(--border-subtle)] rounded-lg mb-3 flex gap-3 group"
+    >
+      <div {...attributes} {...listeners} className="cursor-grab text-[var(--text-muted)] hover:text-[#d9541e] pt-2">
+        <GripVertical size={16} />
       </div>
       <div className="flex-1 space-y-3">
-        <div className="grid grid-cols-1 gap-3">
-          <input type="text" placeholder="Project Title" value={proj.title || ''} onChange={e => onUpdate({ ...proj, title: e.target.value })} className="w-full px-3 py-1.5 border border-slate-700 rounded-lg bg-slate-900 text-sm text-white" />
-          <textarea placeholder="Description" rows={2} value={proj.description || ''} onChange={e => onUpdate({ ...proj, description: e.target.value })} className="w-full px-3 py-1.5 border border-slate-700 rounded-lg bg-slate-900 text-sm text-white" />
+        <div className="grid grid-cols-1 gap-2.5">
+          <input
+            type="text"
+            placeholder="Project Title"
+            value={proj.title || ''}
+            onChange={(e) => onUpdate({ ...proj, title: e.target.value })}
+            className="w-full px-3 py-1.5 border border-[var(--border-subtle)] rounded-lg bg-[var(--bg-canvas)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#d9541e]"
+          />
+          <textarea
+            placeholder="Description and impact metrics..."
+            rows={2}
+            value={proj.description || ''}
+            onChange={(e) => onUpdate({ ...proj, description: e.target.value })}
+            className="w-full px-3 py-1.5 border border-[var(--border-subtle)] rounded-lg bg-[var(--bg-canvas)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#d9541e]"
+          />
         </div>
       </div>
-      <button onClick={onRemove} className="text-slate-500 hover:text-red-400 p-2">
-        <Trash2 className="w-4 h-4" />
+      <button
+        onClick={onRemove}
+        className="text-[var(--text-muted)] hover:text-red-500 p-2 transition-colors"
+        aria-label="Remove Project"
+      >
+        <Trash2 size={14} />
       </button>
     </div>
   );
 };
+
 export default function ResumeBuilderPage() {
   const [resumes, setResumes] = useState<unknown[]>([]);
   const [activeResume, setActiveResume] = useState<Record<string, any> | null>(null);
@@ -142,7 +238,7 @@ export default function ResumeBuilderPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const loadResumeIntoState = (r: Record<string, any>) => {
     setActiveResume(r);
@@ -172,7 +268,7 @@ export default function ResumeBuilderPage() {
       setName(generatedContent.contact?.name || '');
       setEmail(generatedContent.contact?.email || '');
       setPhone(generatedContent.contact?.phone || '');
-      setMessage('Resume sections pre-filled from Profile & Portfolio!');
+      setMessage('Resume sections pre-filled from your unified developer profile!');
     } catch (err) {
       console.error(err);
     }
@@ -185,7 +281,7 @@ export default function ResumeBuilderPage() {
       formData.append('file', file);
       try {
         const res = await api.post('/resumes/upload-and-parse', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
         const parsed = res.data;
         setName(parsed.contact?.name || name);
@@ -194,10 +290,20 @@ export default function ResumeBuilderPage() {
         if (parsed.summary) setSummary(parsed.summary);
         if (parsed.skills) setSkillsInput(parsed.skills.join(', '));
         if (parsed.experience) {
-          setExperience((parsed.experience as ExperienceItem[]).map((e, i) => ({ ...e, _id: `exp-${i}-${Date.now()}` })));
+          setExperience(
+            (parsed.experience as ExperienceItem[]).map((e, i) => ({
+              ...e,
+              _id: `exp-${i}-${Date.now()}`,
+            }))
+          );
         }
         if (parsed.projects) {
-          setProjects((parsed.projects as ProjectItem[]).map((p, i) => ({ ...p, _id: `proj-${i}-${Date.now()}` })));
+          setProjects(
+            (parsed.projects as ProjectItem[]).map((p, i) => ({
+              ...p,
+              _id: `proj-${i}-${Date.now()}`,
+            }))
+          );
         }
         setMessage('Resume parsed successfully! Review extracted content before saving.');
       } catch (err) {
@@ -209,7 +315,10 @@ export default function ResumeBuilderPage() {
   const handleSaveVersion = async () => {
     setSaving(true);
     setMessage('');
-    const skills = skillsInput.split(',').map(s => s.trim()).filter(Boolean);
+    const skills = skillsInput
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     const payload = {
       title,
@@ -218,11 +327,19 @@ export default function ResumeBuilderPage() {
         contact: { name, email, phone, location: '', website: '', linkedin: '', github: '' },
         summary,
         skills,
-        experience: experience.map(e => { const rest = { ...e }; delete (rest as any)._id; return rest; }),
+        experience: experience.map((e) => {
+          const rest = { ...e };
+          delete (rest as any)._id;
+          return rest;
+        }),
         education: (activeResume?.content as Record<string, any>)?.education || [],
-        projects: projects.map(p => { const rest = { ...p }; delete (rest as any)._id; return rest; }),
-        certifications: []
-      }
+        projects: projects.map((p) => {
+          const rest = { ...p };
+          delete (rest as any)._id;
+          return rest;
+        }),
+        certifications: [],
+      },
     };
 
     try {
@@ -240,8 +357,8 @@ export default function ResumeBuilderPage() {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       setExperience((items) => {
-        const oldIndex = items.findIndex(i => i._id === active.id);
-        const newIndex = items.findIndex(i => i._id === over.id);
+        const oldIndex = items.findIndex((i) => i._id === active.id);
+        const newIndex = items.findIndex((i) => i._id === over.id);
         return arrayMove(items, oldIndex, newIndex);
       });
     }
@@ -251,42 +368,63 @@ export default function ResumeBuilderPage() {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       setProjects((items) => {
-        const oldIndex = items.findIndex(i => i._id === active.id);
-        const newIndex = items.findIndex(i => i._id === over.id);
+        const oldIndex = items.findIndex((i) => i._id === active.id);
+        const newIndex = items.findIndex((i) => i._id === over.id);
         return arrayMove(items, oldIndex, newIndex);
       });
     }
   };
 
   const updateExp = (id: string, updated: ExperienceItem) => {
-    setExperience(prev => prev.map(e => e._id === id ? updated : e));
+    setExperience((prev) => prev.map((e) => (e._id === id ? updated : e)));
   };
-  
+
   const removeExp = (id: string) => {
-    setExperience(prev => prev.filter(e => e._id !== id));
+    setExperience((prev) => prev.filter((e) => e._id !== id));
   };
-  
+
   const addExp = () => {
-    setExperience([...experience, { _id: `exp-new-${Date.now()}`, company: '', position: '', start_date: '', end_date: '', highlights: [] }]);
+    setExperience([
+      ...experience,
+      {
+        _id: `exp-new-${Date.now()}`,
+        company: '',
+        position: '',
+        start_date: '',
+        end_date: '',
+        highlights: [],
+      },
+    ]);
   };
 
   const updateProj = (id: string, updated: ProjectItem) => {
-    setProjects(prev => prev.map(p => p._id === id ? updated : p));
+    setProjects((prev) => prev.map((p) => (p._id === id ? updated : p)));
   };
-  
+
   const removeProj = (id: string) => {
-    setProjects(prev => prev.filter(p => p._id !== id));
+    setProjects((prev) => prev.filter((p) => p._id !== id));
   };
 
   const addProj = () => {
-    setProjects([...projects, { _id: `proj-new-${Date.now()}`, title: '', description: '', link: '', highlights: [] }]);
+    setProjects([
+      ...projects,
+      {
+        _id: `proj-new-${Date.now()}`,
+        title: '',
+        description: '',
+        link: '',
+        highlights: [],
+      },
+    ]);
   };
 
   const handleRunAtsReview = async () => {
     if (!activeResume) return;
     setReviewingAts(true);
     try {
-      const res = await api.post(`/resumes/${activeResume.id}/review-ats`, { target_role: targetRole });
+      const res = await api.post(`/resumes/${activeResume.id}/review-ats`, {
+        target_role: targetRole,
+      });
       setAtsReview(res.data);
     } catch (err) {
       console.error(err);
@@ -305,245 +443,366 @@ export default function ResumeBuilderPage() {
     }
   };
 
-  if (loading) {
-    return <DashboardShell><div className="text-white">Loading Resume Builder...</div></DashboardShell>;
-  }
-
   return (
     <DashboardShell>
-      <div className="max-w-6xl mx-auto space-y-8 pb-16">
+      <div className="max-w-7xl mx-auto space-y-8 pb-16">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[var(--border-subtle)]">
           <div>
-            <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-              <FileText className="w-8 h-8 text-indigo-400" /> Resume Builder
-            </h1>
-            <p className="text-slate-400 text-sm mt-1">Multi-template PDF/DOCX compiler, parser, and ATS review engine.</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                Smart Resume Builder
+              </h1>
+              <Badge variant="burnt" size="sm">
+                ATS Optimizer
+              </Badge>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
+              JSON-backed developer resumes, drag-and-drop section compiler, PDF export, and keyword analyzer.
+            </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={handleGenerateFromProfile}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-2"
+              leftIcon={<Sparkles size={13} />}
             >
-              <Sparkles className="w-4 h-4 text-indigo-400" /> Generate from Profile
-            </button>
+              Sync Profile Data
+            </Button>
 
             {activeResume && (
               <a
                 href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/resumes/${activeResume.id}/export/pdf`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-600/30"
               >
-                <Download className="w-4 h-4" /> Export PDF
+                <Button variant="primary" size="sm" leftIcon={<Download size={13} />}>
+                  Export PDF
+                </Button>
               </a>
             )}
           </div>
         </div>
 
         {message && (
-          <div className="p-4 rounded-xl bg-indigo-950/60 border border-indigo-500/50 text-indigo-200 text-sm">
-            {message}
+          <div className="p-3 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] flex items-center justify-between">
+            <span>{message}</span>
+            <button
+              onClick={() => setMessage('')}
+              className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs font-mono"
+            >
+              dismiss
+            </button>
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Form Editor */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-6">
             {/* Template Selector & Upload */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+            <Card className="p-6 space-y-4">
               <div className="flex justify-between items-center">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Layout className="w-5 h-5 text-indigo-400" /> Template & File Import
-                </h2>
+                <div className="flex items-center gap-2">
+                  <Layout size={18} className="text-[#d9541e]" />
+                  <h2 className="text-base font-bold text-[var(--text-primary)]">
+                    Typography & ATS Layout
+                  </h2>
+                </div>
 
-                <label className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 cursor-pointer flex items-center gap-1.5">
-                  <Upload className="w-3.5 h-3.5 text-indigo-400" /> Upload PDF/DOCX
-                  <input type="file" accept=".pdf,.docx" onChange={handleFileUploadAndParse} className="hidden" />
+                <label className="px-3 py-1.5 bg-[var(--surface-hover)] hover:bg-[var(--surface)] text-[var(--text-primary)] text-xs font-semibold rounded-lg border border-[var(--border-subtle)] cursor-pointer flex items-center gap-1.5 transition-colors">
+                  <Upload size={13} className="text-[#d9541e]" /> Upload PDF/DOCX
+                  <input
+                    type="file"
+                    accept=".pdf,.docx"
+                    onChange={handleFileUploadAndParse}
+                    className="hidden"
+                  />
                 </label>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {TEMPLATES.map(t => (
-                  <button
-                    key={t.name}
-                    type="button"
-                    onClick={() => setTemplateName(t.name)}
-                    className={`p-3 rounded-xl border text-left text-xs font-semibold transition ${templateName === t.name ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'}`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
+                {TEMPLATES.map((t) => {
+                  const isCurrent = templateName === t.name;
+                  return (
+                    <button
+                      key={t.name}
+                      type="button"
+                      onClick={() => setTemplateName(t.name)}
+                      className={`p-3 rounded-lg border text-left text-xs font-semibold transition-all duration-150 ${
+                        isCurrent
+                          ? 'border-[#d9541e] bg-[#d9541e]/5 text-[#d9541e] ring-1 ring-[#d9541e]'
+                          : 'border-[var(--border-subtle)] bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
+            </Card>
 
             {/* General Info & Summary */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-              <h2 className="text-lg font-bold text-white">Contact & Professional Summary</h2>
+            <Card className="p-6 space-y-5">
+              <h2 className="text-base font-bold text-[var(--text-primary)]">
+                Contact & Core Narrative
+              </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Full Name</label>
-                  <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full px-3 py-2 border border-slate-700 text-white rounded-lg bg-slate-800 text-sm" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Email</label>
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-700 text-white rounded-lg bg-slate-800 text-sm" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Phone</label>
-                  <input type="text" value={phone} onChange={e => setPhone(e.target.value)} className="w-full px-3 py-2 border border-slate-700 text-white rounded-lg bg-slate-800 text-sm" />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input
+                  label="Full Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ada Lovelace"
+                />
+                <Input
+                  label="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="ada@domain.com"
+                />
+                <Input
+                  label="Phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+1 (555) 019-2831"
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Professional Summary</label>
-                <textarea rows={3} value={summary} onChange={e => setSummary(e.target.value)} className="w-full px-3 py-2 border border-slate-700 text-white rounded-lg bg-slate-800 text-sm" />
+                <Textarea
+                  label="Professional Summary"
+                  rows={3}
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  placeholder="Senior software engineer specializing in low-latency distributed systems..."
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Skills (comma separated)</label>
-                <input type="text" value={skillsInput} onChange={e => setSkillsInput(e.target.value)} className="w-full px-3 py-2 border border-slate-700 text-white rounded-lg bg-slate-800 text-sm" />
+                <Input
+                  label="Technical Skills (Comma separated)"
+                  value={skillsInput}
+                  onChange={(e) => setSkillsInput(e.target.value)}
+                  placeholder="Python, FastAPI, TypeScript, PostgreSQL, Redis, Docker, Celery"
+                />
               </div>
 
               {/* Experience Section */}
-              <div className="pt-4 border-t border-slate-800">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-bold text-white">Work Experience</h3>
-                  <button type="button" onClick={addExp} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
-                    <Plus className="w-3 h-3" /> Add Experience
-                  </button>
+              <div className="pt-4 border-t border-[var(--border-subtle)]">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
+                    Work Experience
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={addExp}
+                    leftIcon={<Plus size={13} />}
+                  >
+                    Add Position
+                  </Button>
                 </div>
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndExp}>
-                  <SortableContext items={experience.map(e => e._id)} strategy={verticalListSortingStrategy}>
-                    {experience.map(exp => (
-                      <SortableExperienceItem key={exp._id} id={exp._id} exp={exp} onUpdate={(d) => updateExp(exp._id, d)} onRemove={() => removeExp(exp._id)} />
+
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEndExp}
+                >
+                  <SortableContext
+                    items={experience.map((e) => e._id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {experience.map((exp) => (
+                      <SortableExperienceItem
+                        key={exp._id}
+                        id={exp._id}
+                        exp={exp}
+                        onUpdate={(d) => updateExp(exp._id, d)}
+                        onRemove={() => removeExp(exp._id)}
+                      />
                     ))}
                   </SortableContext>
                 </DndContext>
-                {experience.length === 0 && <p className="text-xs text-slate-500 italic">No experience added yet.</p>}
+                {experience.length === 0 && (
+                  <p className="text-xs text-[var(--text-muted)] italic py-2">
+                    No positions logged. Add your work history above.
+                  </p>
+                )}
               </div>
 
               {/* Projects Section */}
-              <div className="pt-4 border-t border-slate-800">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-bold text-white">Projects</h3>
-                  <button type="button" onClick={addProj} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
-                    <Plus className="w-3 h-3" /> Add Project
-                  </button>
+              <div className="pt-4 border-t border-[var(--border-subtle)]">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
+                    Projects & Systems Built
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={addProj}
+                    leftIcon={<Plus size={13} />}
+                  >
+                    Add Project
+                  </Button>
                 </div>
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndProj}>
-                  <SortableContext items={projects.map(p => p._id)} strategy={verticalListSortingStrategy}>
-                    {projects.map(proj => (
-                      <SortableProjectItem key={proj._id} id={proj._id} proj={proj} onUpdate={(d) => updateProj(proj._id, d)} onRemove={() => removeProj(proj._id)} />
+
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEndProj}
+                >
+                  <SortableContext
+                    items={projects.map((p) => p._id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {projects.map((proj) => (
+                      <SortableProjectItem
+                        key={proj._id}
+                        id={proj._id}
+                        proj={proj}
+                        onUpdate={(d) => updateProj(proj._id, d)}
+                        onRemove={() => removeProj(proj._id)}
+                      />
                     ))}
                   </SortableContext>
                 </DndContext>
-                {projects.length === 0 && <p className="text-xs text-slate-500 italic">No projects added yet.</p>}
+                {projects.length === 0 && (
+                  <p className="text-xs text-[var(--text-muted)] italic py-2">
+                    No projects logged. Add your key technical accomplishments above.
+                  </p>
+                )}
               </div>
 
-              <div className="flex justify-end pt-2">
-                <button
-                  type="button"
+              <div className="flex justify-end pt-3 border-t border-[var(--border-subtle)]">
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={handleSaveVersion}
-                  disabled={saving}
-                  className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl"
+                  isLoading={saving}
                 >
-                  {saving ? 'Saving...' : 'Save New Resume Version'}
-                </button>
+                  Save Active Resume Version
+                </Button>
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* ATS Review & Version History Sidebar */}
-          <div className="space-y-8">
-            {/* ATS Analyzer Drawer */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-400" /> ATS Optimization Analyzer
-              </h2>
-
+          <div className="space-y-6">
+            {/* ATS Analyzer Card */}
+            <Card className="p-6 space-y-4">
               <div className="flex items-center gap-2">
-                <select
-                  value={targetRole}
-                  onChange={e => setTargetRole(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-slate-700 text-white rounded-lg bg-slate-800 text-xs"
-                >
-                  <option value="fullstack">Fullstack Engineer</option>
-                  <option value="backend">Backend Engineer</option>
-                  <option value="frontend">Frontend Engineer</option>
-                </select>
+                <Sparkles size={18} className="text-[#d9541e]" />
+                <h2 className="text-base font-bold text-[var(--text-primary)]">
+                  ATS Score Engine
+                </h2>
+              </div>
 
-                <button
-                  type="button"
+              <div className="space-y-2.5">
+                <Select
+                  label="Target Role"
+                  value={targetRole}
+                  onChange={(e) => setTargetRole(e.target.value)}
+                  options={[
+                    { value: 'fullstack', label: 'Fullstack Engineer' },
+                    { value: 'backend', label: 'Backend Engineer' },
+                    { value: 'frontend', label: 'Frontend Engineer' },
+                  ]}
+                />
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  fullWidth
                   onClick={handleRunAtsReview}
-                  disabled={reviewingAts || !activeResume}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg"
+                  isLoading={reviewingAts}
+                  disabled={!activeResume}
                 >
-                  {reviewingAts ? 'Analyzing...' : 'Run ATS Review'}
-                </button>
+                  Analyze ATS Score
+                </Button>
               </div>
 
               {atsReview && (
                 <div className="space-y-3 pt-2">
-                  <div className="p-4 rounded-xl bg-indigo-950/60 border border-indigo-500/40 text-center">
-                    <span className="text-3xl font-extrabold text-indigo-300">{atsReview.score}</span>
-                    <span className="text-xs text-slate-400 block mt-1">ATS Score / 100</span>
+                  <div className="p-4 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-subtle)] text-center">
+                    <span className="text-3xl font-extrabold font-mono text-[#d9541e]">
+                      {atsReview.score}
+                    </span>
+                    <span className="text-xs text-[var(--text-muted)] block mt-0.5">
+                      ATS Score / 100
+                    </span>
                   </div>
 
                   {atsReview.missing_skills && atsReview.missing_skills.length > 0 && (
-                    <div className="p-3 rounded-lg bg-slate-800 border border-slate-700 text-xs">
-                      <p className="font-semibold text-amber-400 mb-1">Missing Target Keywords:</p>
-                      <p className="text-slate-300">{atsReview.missing_skills.join(', ')}</p>
+                    <div className="p-3 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-subtle)] text-xs">
+                      <p className="font-semibold text-amber-600 dark:text-amber-400 mb-1">
+                        Missing Keywords:
+                      </p>
+                      <p className="text-[var(--text-secondary)]">{atsReview.missing_skills.join(', ')}</p>
                     </div>
                   )}
 
                   {atsReview.action_verb_feedback && (
-                    <div className="p-3 rounded-lg bg-slate-800 border border-slate-700 text-xs">
-                      <p className="font-semibold text-indigo-300 mb-1">Action Verbs:</p>
-                      <p className="text-slate-300">{atsReview.action_verb_feedback.join(' ')}</p>
+                    <div className="p-3 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-subtle)] text-xs">
+                      <p className="font-semibold text-[var(--text-primary)] mb-1">Action Verbs:</p>
+                      <p className="text-[var(--text-secondary)]">{atsReview.action_verb_feedback.join(' ')}</p>
                     </div>
                   )}
                 </div>
               )}
-            </div>
+            </Card>
 
             {/* Version History Drawer */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Layers className="w-5 h-5 text-indigo-400" /> Version History
-              </h2>
-
-              <div className="space-y-2">
-                {resumes.map((r: any) => (
-                  <div
-                    key={r.id}
-                    className={`p-3 rounded-xl border text-xs flex justify-between items-center transition ${r.id === activeResume?.id ? 'bg-slate-800 border-indigo-500' : 'bg-slate-900 border-slate-800'}`}
-                  >
-                    <div>
-                      <p className="font-semibold text-white">v{r.version_number} — {r.title}</p>
-                      <p className="text-[10px] text-slate-400">{new Date(r.created_at).toLocaleDateString()}</p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {r.is_active ? (
-                        <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold flex items-center gap-1">
-                          <CheckCircle className="w-3 h-3" /> Active
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handleActivate(r.id)}
-                          className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px]"
-                        >
-                          Activate
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+            <Card className="p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Layers size={18} className="text-[#d9541e]" />
+                <h2 className="text-base font-bold text-[var(--text-primary)]">
+                  Version Archive
+                </h2>
               </div>
-            </div>
+
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {resumes.map((r: any) => {
+                  const isCurrent = r.id === activeResume?.id;
+                  return (
+                    <div
+                      key={r.id}
+                      className={`p-3 rounded-lg border text-xs flex justify-between items-center transition-colors ${
+                        isCurrent
+                          ? 'bg-[var(--surface-hover)] border-[#d9541e]'
+                          : 'bg-[var(--surface)] border-[var(--border-subtle)]'
+                      }`}
+                    >
+                      <div>
+                        <p className="font-semibold text-[var(--text-primary)]">
+                          v{r.version_number} — {r.title}
+                        </p>
+                        <p className="text-[10px] text-[var(--text-muted)] font-mono">
+                          {new Date(r.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+
+                      <div>
+                        {r.is_active ? (
+                          <Badge variant="success" size="sm">
+                            Active
+                          </Badge>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleActivate(r.id)}
+                          >
+                            Activate
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
           </div>
         </div>
       </div>

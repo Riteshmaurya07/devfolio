@@ -12,6 +12,7 @@ This document defines the complete architectural overhaul required to transition
     *   *Geometry:* Architectural, slightly rounded corners (`rounded-md` 6px, `rounded-lg` 8px) avoiding oversized or sci-fi pill shapes.
     *   *Theme Engine:* System & manual Light/Dark mode with zero-flicker SSR hydration script and persistent `useThemeStore` + `ThemeToggle`.
     *   *Global Component Suite:* Centralized reusable components in `frontend/src/components/ui/` (`Button`, `Card`, `Badge`, `Input`, `Textarea`, `Select`, `StatCard`, `ThemeToggle`, `Tabs`, `Modal`, `EmptyState`, `Icons` including `GithubIcon` & `GoogleIcon`).
+    *   *Unified Page Coverage:* 100% of routes follow the calm editorial system (`/`, `/login`, `/register`, `/dashboard`, `/coding-dashboard`, `/leaderboard`, `/roadmaps`, `/ai-advisor`, `/job-tracker`, `/analytics-dashboard`, `/portfolio/builder`, `/resumes`, `/resumes/builder`, `/feed`, `/settings/notifications`, `/admin`, `/p/[slug]`).
 *   **Backend:** FastAPI (Python) (located in `backend/` directory)
 *   **Database:** PostgreSQL
 *   **Background Jobs & Notifications:** Celery (Worker + Beat) with Redis
