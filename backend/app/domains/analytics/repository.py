@@ -46,3 +46,12 @@ class AnalyticsRepository:
             .order_by(AnalyticsDailySummary.summary_date.desc())
         )
         return res.scalars().all()
+
+    async def get_recent_events(self, profile_id: UUID, limit: int = 100) -> List[AnalyticsEvent]:
+        res = await self.db.execute(
+            select(AnalyticsEvent)
+            .where(AnalyticsEvent.profile_id == profile_id)
+            .order_by(AnalyticsEvent.timestamp.desc())
+            .limit(limit)
+        )
+        return res.scalars().all()

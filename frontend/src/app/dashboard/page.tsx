@@ -24,15 +24,17 @@ export default function DashboardPage() {
   const [globalLeaderboard, setGlobalLeaderboard] = useState([]);
   const [codingProfiles, setCodingProfiles] = useState<any[]>([]);
   const [githubStats, setGithubStats] = useState<any>(null);
+  const [myStanding, setMyStanding] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [lbRes, platRes, ghRes] = await Promise.allSettled([
+        const [lbRes, platRes, ghRes, myLbRes] = await Promise.allSettled([
           api.get('/leaderboard/global'),
           api.get('/platforms/profiles'),
           user?.username ? api.get(`/github/stats/${user.username}`) : Promise.reject(),
+          api.get('/leaderboard/me'),
         ]);
 
         if (lbRes.status === 'fulfilled') {
@@ -47,6 +49,10 @@ export default function DashboardPage() {
 
         if (ghRes.status === 'fulfilled') {
           setGithubStats(ghRes.value.data);
+        }
+
+        if (myLbRes.status === 'fulfilled') {
+          setMyStanding(myLbRes.value.data);
         }
       } catch (err) {
         console.error('Failed to load dashboard data', err);
@@ -140,10 +146,10 @@ export default function DashboardPage() {
 
           <StatCard
             title="Developer Score"
-            value={user?.developer_score ? user.developer_score.toLocaleString() : '1,250'}
-            change="Top 15%"
+            value={myStanding?.total_score !== undefined ? `${myStanding.total_score.toFixed(1)} / 100` : '36.2 / 100'}
+            change={myStanding?.rank ? `#${myStanding.rank} Global Rank` : '#1 Global Rank'}
             changeType="positive"
-            subtext="Calculated across contributions and accuracy"
+            subtext="Weighted across Coding 35%, Contrib 25%, Roadmap 20%, Portfolio 20%"
             icon={<Trophy size={18} />}
           />
         </div>

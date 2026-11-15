@@ -180,6 +180,20 @@ The system leverages **Celery and Redis** to decouple notifications from the mai
     *   `GET /api/platforms/analytics`
 *   **AI Advisor:**
     *   `GET /api/ai/chats` & `POST /api/ai/chats` & `POST /api/ai/chats/{chat_id}/message`
+*   **Developer Scoring Engine & Leaderboard:**
+    *   `GET /api/leaderboard/global` - Cursor-paginated global leaderboard rankings with total and component scores.
+    *   `GET /api/leaderboard/me` - Authenticated user rank, total Developer Score, 4-dimension normalized scores, and raw metric breakdowns with on-demand fallback recomputation.
+    *   `GET /api/leaderboard/badges` - Irrevocable permanent merit badges (`problem_solver_100`, `github_star_master`, `roadmap_hero`).
+    *   **Scoring Formula (0–100 Scale):**
+        *   `Coding Score (35% Weight)`: $\min(100, (\text{problems\_solved} \times 0.5) + (\max(0, \text{rating} - 1000) \times 0.05))$ across LeetCode, Codeforces, CodeChef, and GeeksforGeeks.
+        *   `Contribution Score (25% Weight)`: $\min(100, (\text{total\_commits} \times 0.1) + (\text{total\_stars} \times 2.0))$ from GitHub contribution calendar and repository stars.
+        *   `Roadmap Score (20% Weight)`: $\min(100, (\text{completed\_milestones} / \text{total\_milestones}) \times 100)$.
+        *   `Portfolio Score (20% Weight)`: $\min(100, (\text{total\_views} \times 0.5) + (\text{project\_count} \times 10.0))$.
+        *   `Total Developer Score`: $\text{Coding} \times 0.35 + \text{Contribution} \times 0.25 + \text{Roadmap} \times 0.20 + \text{Portfolio} \times 0.20$.
+*   **Analytics & Telemetry Engine (Module 11):**
+    *   `POST /api/analytics/events` - Ingest page views, downloads, and click-throughs with 5-minute sliding IP window deduplication and SHA-256 privacy hashing.
+    *   `GET /api/analytics/dashboard/summary` - Aggregated live telemetry containing 7-day chronological daily rollups, 24-hour activity heatmaps, conversion rates (visitor-to-download and visitor-to-github), and acquisition referrers.
+    *   `GET /api/platforms/dashboard/me` - Multi-platform competitive coding intelligence with total problems solved, topic analysis, submission heatmap, and difficulty distributions.
 *   **Resume Builder & Document Engine (Module 4):**
     *   `GET /api/resumes/me` - List all versioned resumes for authenticated user's profile with harmonized schema.
     *   `GET /api/resumes/{resume_id}` - Retrieve single resume version with dual compatibility schema (`content` and `resume_data`).
