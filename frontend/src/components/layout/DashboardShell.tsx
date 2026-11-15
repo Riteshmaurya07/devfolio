@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { Badge } from '@/components/ui/Badge';
 import {
   Menu,
   X,
@@ -22,7 +24,7 @@ import {
   ShieldAlert,
   LogOut,
   User as UserIcon,
-  Settings
+  Settings,
 } from 'lucide-react';
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -59,29 +61,35 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   ];
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] overflow-hidden font-sans transition-colors duration-200">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 shadow-2xl transform transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[var(--bg-surface)] border-r border-[var(--border-subtle)] shadow-xl transform transition-transform duration-300 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } md:relative md:translate-x-0 flex flex-col justify-between`}
       >
         <div>
           {/* Logo Brand Header */}
-          <div className="flex items-center justify-between h-16 px-5 border-b border-slate-800">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-md shadow-indigo-500/20">
-                <Code2 className="w-5 h-5 text-white" />
+          <div className="flex items-center justify-between h-16 px-5 border-b border-[var(--border-subtle)]">
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="w-8 h-8 rounded-lg bg-[#d9541e] flex items-center justify-center shadow-xs text-white">
+                <Code2 className="w-4 h-4 text-white" />
               </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
-                Devfolio OS
-              </span>
+              <div className="flex flex-col">
+                <span className="text-base font-bold tracking-tight text-[var(--text-primary)] leading-tight">
+                  Devfolio <span className="text-[#d9541e]">OS</span>
+                </span>
+                <span className="text-[10px] text-[var(--text-muted)] tracking-wider uppercase font-semibold">
+                  Developer Platform
+                </span>
+              </div>
             </Link>
             <button
+              type="button"
               onClick={toggleSidebar}
-              className="md:hidden text-slate-400 hover:text-white transition"
+              className="md:hidden p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-canvas-subtle)] transition"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
 
@@ -89,19 +97,19 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           <nav className="p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-140px)]">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+              const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(`${item.href}/`));
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => sidebarOpen && toggleSidebar()}
-                  className={`flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
+                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 ${
                     isActive
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-[#d9541e] text-white shadow-2xs font-semibold'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-canvas-subtle)]'
                   }`}
                 >
-                  <Icon size={18} />
+                  <Icon size={16} className={isActive ? 'text-white' : 'text-[var(--text-muted)]'} />
                   <span>{item.label}</span>
                 </Link>
               );
@@ -109,17 +117,17 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
             {/* Admin Dashboard Entry (If Admin) */}
             {user?.is_admin && (
-              <div className="pt-2 mt-2 border-t border-slate-800">
+              <div className="pt-2 mt-2 border-t border-[var(--border-subtle)]">
                 <Link
                   href="/admin"
                   onClick={() => sidebarOpen && toggleSidebar()}
-                  className={`flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
+                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${
                     pathname.startsWith('/admin')
-                      ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
-                      : 'text-amber-400 hover:bg-amber-950/40 hover:text-amber-300'
+                      ? 'bg-[#111111] dark:bg-[#f3eee3] text-white dark:text-[#111111] shadow-2xs'
+                      : 'text-[#d9541e] hover:bg-[#d9541e]/10'
                   }`}
                 >
-                  <ShieldAlert size={18} />
+                  <ShieldAlert size={16} />
                   <span>Admin Panel</span>
                 </Link>
               </div>
@@ -127,75 +135,91 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           </nav>
         </div>
 
-        {/* User Footer / Logout */}
-        <div className="p-3 border-t border-slate-800 bg-slate-900/60 space-y-2">
-          <div className="flex items-center justify-between px-2">
+        {/* User Footer / Controls */}
+        <div className="p-3 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] space-y-2">
+          <div className="flex items-center justify-between px-1">
             <Link
               href="/profile/edit"
-              className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition"
+              className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
             >
-              <Settings size={14} />
+              <Settings size={14} className="text-[var(--text-muted)]" />
               <span>Settings</span>
             </Link>
             {user?.username && (
               <Link
                 href={`/u/${user.username}`}
-                className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition"
+                className="flex items-center gap-1 text-xs text-[#d9541e] hover:underline transition font-medium"
               >
-                <UserIcon size={14} />
+                <UserIcon size={13} />
                 <span>My Profile</span>
               </Link>
             )}
           </div>
           <button
+            type="button"
             onClick={handleLogout}
-            className="flex items-center justify-center space-x-2 w-full py-2 px-3 rounded-xl bg-red-950/30 border border-red-900/40 text-red-400 hover:bg-red-900/40 text-xs font-semibold transition"
+            className="flex items-center justify-center space-x-2 w-full py-2 px-3 rounded-lg bg-[var(--bg-canvas-subtle)] hover:bg-red-500/10 text-[var(--text-secondary)] hover:text-red-600 dark:hover:text-red-400 border border-[var(--border-subtle)] text-xs font-medium transition cursor-pointer"
           >
-            <LogOut size={15} />
+            <LogOut size={14} />
             <span>Sign Out</span>
           </button>
         </div>
       </aside>
 
-      {/* Main Container */}
+      {/* Main Content Container */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top Header */}
-        <header className="h-16 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between px-6 backdrop-blur-md">
+        {/* Top Header Navbar */}
+        <header className="h-16 bg-[var(--bg-surface)] border-b border-[var(--border-subtle)] flex items-center justify-between px-6 backdrop-blur-xs transition-colors duration-200">
           <button
+            type="button"
             onClick={toggleSidebar}
-            className="md:hidden text-slate-400 hover:text-white transition p-1"
+            className="md:hidden p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-canvas-subtle)] transition"
           >
-            <Menu size={22} />
+            <Menu size={20} />
           </button>
 
-          <div className="flex items-center space-x-4 ml-auto">
+          {/* Right Header Utilities: ThemeToggle, Notifications, User Pill */}
+          <div className="flex items-center space-x-3 ml-auto">
+            {/* Theme Toggle (Light Cream <-> Dark Black) */}
+            <ThemeToggle />
+
+            {/* Notification Bell */}
             <NotificationBell />
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
-              <span className="text-xs font-semibold text-slate-200">
-                {user?.username || 'Developer'}
-              </span>
-              {user?.is_admin && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  Admin
+
+            {/* User Profile Pill */}
+            <div className="flex items-center gap-2.5 pl-3 border-l border-[var(--border-subtle)]">
+              <div className="flex flex-col text-right hidden sm:flex">
+                <span className="text-xs font-semibold text-[var(--text-primary)] leading-tight">
+                  {user?.username || 'Developer'}
                 </span>
+                <span className="text-[10px] text-[var(--text-muted)] leading-tight">
+                  {user?.email || 'user@devfolio.com'}
+                </span>
+              </div>
+
+              {user?.is_admin && (
+                <Badge variant="burnt" size="sm">
+                  Admin
+                </Badge>
               )}
+
               {user?.avatar_url ? (
                 <img
                   src={user.avatar_url}
                   alt="Avatar"
-                  className="w-8 h-8 rounded-full border border-slate-700 object-cover"
+                  className="w-8 h-8 rounded-lg border border-[var(--border-subtle)] object-cover"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-xs font-bold text-indigo-300">
-                  {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
+                <div className="w-8 h-8 rounded-lg bg-[#d9541e]/15 border border-[#d9541e]/30 flex items-center justify-center text-xs font-bold text-[#d9541e]">
+                  {user?.username ? user.username.charAt(0).toUpperCase() : 'D'}
                 </div>
               )}
             </div>
           </div>
         </header>
 
-        {/* Dynamic Route Content */}
-        <main className="flex-1 overflow-y-auto p-6 bg-slate-950">
+        {/* Dynamic Page Content */}
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-[var(--bg-canvas)] transition-colors duration-200">
           {children}
         </main>
       </div>

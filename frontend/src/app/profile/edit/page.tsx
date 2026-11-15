@@ -5,6 +5,19 @@ import { useSearchParams } from 'next/navigation';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Button,
+  Badge,
+  Input,
+  Textarea,
+  Select,
+  Tabs,
+} from '@/components/ui';
 import { 
   User, 
   Code, 
@@ -279,11 +292,13 @@ function ProfileEditContent() {
     <DashboardShell>
       <div className="max-w-4xl mx-auto space-y-6 pb-16">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[var(--border-subtle)]">
           <div>
-            <h1 className="text-3xl font-extrabold text-white">Profile & Integrations Setup</h1>
-            <p className="text-sm text-slate-400 mt-1">
-              Configure what you want to share. All fields and integrations are completely optional.
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+              Profile & Integrations Setup
+            </h1>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
+              Configure your developer identity. All fields, coding handles, and links are completely optional.
             </p>
           </div>
           {profile?.username && (
@@ -291,219 +306,200 @@ function ProfileEditContent() {
               href={`/u/${profile.username}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition shadow-sm w-fit"
             >
-              <Eye size={14} className="text-indigo-400" />
-              <span>View Public Profile</span>
-              <ExternalLink size={12} className="text-slate-500" />
+              <Button variant="secondary" size="sm" leftIcon={<Eye size={13} className="text-[#d9541e]" />} rightIcon={<ExternalLink size={12} className="text-[var(--text-muted)]" />}>
+                View Public Profile
+              </Button>
             </a>
           )}
         </div>
 
         {message && (
-          <div className="p-4 rounded-xl bg-indigo-950/60 border border-indigo-500/50 text-indigo-200 text-sm flex items-center justify-between">
+          <div className="p-3.5 rounded-lg bg-[#d9541e]/10 border border-[#d9541e]/25 text-xs text-[#d9541e] font-medium flex items-center justify-between">
             <span>{message}</span>
+            <button onClick={() => setMessage('')} className="underline text-xs">Dismiss</button>
           </div>
         )}
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
-          {[
-            { id: 'general', label: 'Basic Info & Visuals', icon: User },
-            { id: 'integrations', label: 'Coding Platforms (LeetCode, CF)', icon: Code },
-            { id: 'socials', label: 'Social & Portfolio Links', icon: Globe },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                type="button"
-                className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
-                  isActive
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                    : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <Icon size={16} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+        <div className="pt-1">
+          <Tabs
+            activeTab={activeTab}
+            onChange={(id) => setActiveTab(id as any)}
+            tabs={[
+              { id: 'general', label: 'Basic Info & Visuals', icon: <User size={14} /> },
+              { id: 'integrations', label: 'Coding Platforms & GitHub', icon: <Code size={14} /> },
+              { id: 'socials', label: 'Social & Web Links', icon: <Globe size={14} /> },
+            ]}
+          />
         </div>
 
         {/* Tab 1: Basic Info & Visuals */}
         {activeTab === 'general' && (
           <form onSubmit={handleSaveProfile} className="space-y-6">
             {/* Visual Assets */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-6 shadow-sm">
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Image className="w-5 h-5 text-indigo-400" /> Cover & Avatar (Optional)
-              </h2>
-
-              {/* Cover Banner */}
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-2">Cover Banner</label>
-                <div className="relative h-36 w-full rounded-xl bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center group">
-                  {coverPreview ? (
-                    <img src={coverPreview} alt="Cover" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-slate-500 text-xs">No cover image uploaded (Default gradient will be used)</span>
-                  )}
-                  <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer text-white text-xs gap-2 font-medium">
-                    <Camera size={16} /> Change Cover
-                    <input type="file" accept="image/*" onChange={handleCoverChange} className="hidden" />
-                  </label>
-                </div>
-              </div>
-
-              {/* Avatar */}
-              <div className="flex items-center gap-6 pt-2">
-                <div className="relative w-20 h-20 rounded-full bg-slate-800 border-2 border-indigo-500/60 overflow-hidden flex items-center justify-center group">
-                  {avatarPreview ? (
-                    <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="text-2xl font-bold text-indigo-400">
-                      {name ? name.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                  )}
-                  <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer text-white">
-                    <Camera size={18} />
-                    <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
-                  </label>
-                </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Image className="w-4 h-4 text-[#d9541e]" /> Cover & Avatar (Optional)
+                </CardTitle>
+                <CardDescription>Upload a banner or avatar to personalize your public profile</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Cover Banner */}
                 <div>
-                  <p className="text-sm font-semibold text-white">Profile Photo</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Click on the circle to upload a custom avatar. Max 5MB.</p>
+                  <label className="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
+                    Cover Banner
+                  </label>
+                  <div className="relative h-36 w-full rounded-lg bg-[var(--bg-canvas-subtle)] border border-[var(--border-subtle)] overflow-hidden flex items-center justify-center group">
+                    {coverPreview ? (
+                      <img src={coverPreview} alt="Cover" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[var(--text-muted)] text-xs">
+                        No cover uploaded (Default calm gradient will be displayed)
+                      </span>
+                    )}
+                    <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer text-white text-xs gap-2 font-medium">
+                      <Camera size={16} /> Change Cover
+                      <input type="file" accept="image/*" onChange={handleCoverChange} className="hidden" />
+                    </label>
+                  </div>
                 </div>
-              </div>
-            </div>
+
+                {/* Avatar */}
+                <div className="flex items-center gap-6 pt-2 border-t border-[var(--border-subtle)]">
+                  <div className="relative w-20 h-20 rounded-lg bg-[var(--bg-canvas-subtle)] border-2 border-[#d9541e]/50 overflow-hidden flex items-center justify-center group shrink-0">
+                    {avatarPreview ? (
+                      <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-2xl font-bold text-[#d9541e]">
+                        {name ? name.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                    )}
+                    <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer text-white">
+                      <Camera size={18} />
+                      <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                    </label>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-primary)]">
+                      Profile Photo
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                      Hover and click to upload a custom square avatar (Max 5MB).
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* General Bio & Info */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-sm">
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <User className="w-5 h-5 text-indigo-400" /> Personal Details
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Display Name</label>
-                  <input
-                    type="text"
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-[#d9541e]" /> Personal Details
+                </CardTitle>
+                <CardDescription>Basic biographical details shown on your developer profile</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Display Name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Alex Kumar"
-                    className="w-full px-3.5 py-2.5 border border-slate-700 text-white rounded-xl bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Headline / Current Role</label>
-                  <input
-                    type="text"
+                  <Input
+                    label="Headline / Current Role"
                     value={currentPosition}
                     onChange={(e) => setCurrentPosition(e.target.value)}
-                    placeholder="e.g. Fullstack Developer"
-                    className="w-full px-3.5 py-2.5 border border-slate-700 text-white rounded-xl bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    placeholder="e.g. Fullstack Engineer"
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Company / Organization</label>
-                  <input
-                    type="text"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Company / College"
                     value={company}
                     onChange={(e) => setCompany(e.target.value)}
                     placeholder="e.g. Acme Tech or Student"
-                    className="w-full px-3.5 py-2.5 border border-slate-700 text-white rounded-xl bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Location</label>
-                  <input
-                    type="text"
+                  <Input
+                    label="Location"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="e.g. Bengaluru, India"
-                    className="w-full px-3.5 py-2.5 border border-slate-700 text-white rounded-xl bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Short Bio</label>
-                <input
-                  type="text"
+                <Input
+                  label="Short Bio"
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  placeholder="e.g. Building distributed systems and loving graph algorithms."
-                  className="w-full px-3.5 py-2.5 border border-slate-700 text-white rounded-xl bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  placeholder="e.g. Passionate about distributed systems, backend architectures, and clean code."
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">About Me (Markdown & paragraphs)</label>
-                <textarea
+                <Textarea
+                  label="About Me (Markdown & Paragraphs)"
                   rows={4}
                   value={about}
                   onChange={(e) => setAbout(e.target.value)}
-                  placeholder="Share your journey, interests, or project highlights..."
-                  className="w-full px-3.5 py-2.5 border border-slate-700 text-white rounded-xl bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm leading-relaxed"
+                  placeholder="Share your engineering journey, key interests, or project highlights..."
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Skills & Technologies (comma separated)</label>
-                <input
-                  type="text"
+                <Input
+                  label="Skills & Technologies (Comma Separated)"
                   value={skillsInput}
                   onChange={(e) => setSkillsInput(e.target.value)}
                   placeholder="React, Next.js, Python, FastAPI, Docker, PostgreSQL"
-                  className="w-full px-3.5 py-2.5 border border-slate-700 text-white rounded-xl bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Visibility Settings */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3 shadow-sm">
-              <h2 className="text-base font-bold text-white">Profile Privacy</h2>
-              <div className="flex gap-6 items-center pt-1">
-                <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="visibility"
-                    value="public"
-                    checked={visibility === 'public'}
-                    onChange={(e) => setVisibility(e.target.value)}
-                    className="text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span>Public (Accessible by anyone at /u/{profile?.username})</span>
-                </label>
-                <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="visibility"
-                    value="private"
-                    checked={visibility === 'private'}
-                    onChange={(e) => setVisibility(e.target.value)}
-                    className="text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span>Private (Only visible to you)</span>
-                </label>
-              </div>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Privacy</CardTitle>
+                <CardDescription>Control whether your profile is publicly accessible or private</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-6 items-center">
+                  <label className="flex items-center gap-2 text-xs text-[var(--text-secondary)] cursor-pointer">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="public"
+                      checked={visibility === 'public'}
+                      onChange={(e) => setVisibility(e.target.value)}
+                      className="accent-[#d9541e]"
+                    />
+                    <span>Public (Accessible at /u/{profile?.username})</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-[var(--text-secondary)] cursor-pointer">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="private"
+                      checked={visibility === 'private'}
+                      onChange={(e) => setVisibility(e.target.value)}
+                      className="accent-[#d9541e]"
+                    />
+                    <span>Private (Only visible to you)</span>
+                  </label>
+                </div>
+              </CardContent>
+            </Card>
 
             <div className="flex justify-end">
-              <button
+              <Button
                 type="submit"
-                disabled={saving}
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 text-sm transition disabled:opacity-50"
+                variant="primary"
+                size="md"
+                isLoading={saving}
+                leftIcon={<Save size={15} />}
               >
-                <Save size={16} />
-                <span>{saving ? 'Saving Changes...' : 'Save Profile Changes'}</span>
-              </button>
+                Save Profile Changes
+              </Button>
             </div>
           </form>
         )}
@@ -512,100 +508,119 @@ function ProfileEditContent() {
         {activeTab === 'integrations' && (
           <div className="space-y-6">
             {/* Add/Connect Form */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-sm">
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Code className="w-5 h-5 text-indigo-400" /> Connect Competitive Coding Handles
-              </h2>
-              <p className="text-xs text-slate-400">
-                Link any coding platform handle. We will automatically fetch your total problems solved, ratings, and submission heatmaps. Add only the ones you use.
-              </p>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Code className="w-4 h-4 text-[#d9541e]" /> Connect Competitive Coding Handles
+                </CardTitle>
+                <CardDescription>
+                  Link your coding accounts. We will automatically fetch total solved problems, rankings, ratings, and heatmaps.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleConnectPlatform} className="flex flex-col sm:flex-row gap-3">
+                  <div className="sm:w-48">
+                    <Select
+                      value={platformInput}
+                      onChange={(e) => setPlatformInput(e.target.value)}
+                      options={[
+                        { value: 'leetcode', label: 'LeetCode' },
+                        { value: 'codeforces', label: 'Codeforces' },
+                        { value: 'codechef', label: 'CodeChef' },
+                        { value: 'geeksforgeeks', label: 'GeeksforGeeks' },
+                      ]}
+                    />
+                  </div>
 
-              <form onSubmit={handleConnectPlatform} className="flex flex-col sm:flex-row gap-3 pt-2">
-                <select
-                  value={platformInput}
-                  onChange={(e) => setPlatformInput(e.target.value)}
-                  className="px-3.5 py-2.5 border border-slate-700 text-white rounded-xl bg-slate-800 text-xs focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="leetcode">LeetCode</option>
-                  <option value="codeforces">Codeforces</option>
-                  <option value="codechef">CodeChef</option>
-                  <option value="geeksforgeeks">GeeksforGeeks</option>
-                </select>
+                  <div className="flex-1">
+                    <Input
+                      required
+                      value={handleInput}
+                      onChange={(e) => setHandleInput(e.target.value)}
+                      placeholder="Enter username / handle (e.g. tourist)"
+                    />
+                  </div>
 
-                <input
-                  type="text"
-                  required
-                  value={handleInput}
-                  onChange={(e) => setHandleInput(e.target.value)}
-                  placeholder="Enter username / handle (e.g. tourist)"
-                  className="flex-1 px-3.5 py-2.5 border border-slate-700 text-white rounded-xl bg-slate-800 text-xs focus:ring-2 focus:ring-indigo-500"
-                />
-
-                <button
-                  type="submit"
-                  disabled={connectingPlatform}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <Plus size={14} />
-                  <span>{connectingPlatform ? 'Connecting...' : 'Connect Platform'}</span>
-                </button>
-              </form>
-            </div>
+                  <div className="sm:pt-0 pt-1">
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="md"
+                      isLoading={connectingPlatform}
+                      leftIcon={<Plus size={14} />}
+                      className="w-full sm:w-auto h-[42px]"
+                    >
+                      Connect
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
 
             {/* Connected Platforms List */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-sm">
-              <h3 className="text-sm font-bold text-white">Connected Platforms ({codingProfiles.length})</h3>
-
-              {codingProfiles.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
-                  No competitive coding handles connected yet. Add one above whenever you wish.
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Connected Platforms ({codingProfiles.length})</CardTitle>
+                  <CardDescription>Live synchronized problem solving accounts</CardDescription>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {codingProfiles.map((cp) => (
-                    <div
-                      key={cp.id}
-                      className="p-4 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-between"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="capitalize font-bold text-white text-sm">{cp.platform}</span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            Active
-                          </span>
-                          {cp.stats?.total_solved !== undefined && (
-                            <span className="text-[11px] font-bold text-indigo-300">
-                              • {cp.stats.total_solved} Solved
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-indigo-400 font-mono mt-0.5">@{cp.external_username}</p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleSyncPlatform(cp.platform)}
-                        disabled={syncingPlatform === cp.platform}
-                        className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition text-xs flex items-center gap-1.5"
-                        title="Sync latest statistics"
+              </CardHeader>
+              <CardContent>
+                {codingProfiles.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-[var(--text-muted)] border border-dashed border-[var(--border-subtle)] rounded-lg">
+                    No competitive coding handles connected yet. Add one above whenever you wish.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {codingProfiles.map((cp) => (
+                      <div
+                        key={cp.id}
+                        className="p-3.5 rounded-lg bg-[var(--bg-canvas-subtle)] border border-[var(--border-subtle)] flex items-center justify-between"
                       >
-                        <RefreshCw size={14} className={syncingPlatform === cp.platform ? 'animate-spin' : ''} />
-                        <span className="text-[11px]">Sync</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="capitalize font-bold text-xs text-[var(--text-primary)]">
+                              {cp.platform}
+                            </span>
+                            <Badge variant="success" size="sm">
+                              Active
+                            </Badge>
+                            {cp.stats?.total_solved !== undefined && (
+                              <span className="text-xs font-mono font-bold text-[#d9541e]">
+                                • {cp.stats.total_solved} Solved
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">
+                            @{cp.external_username}
+                          </p>
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleSyncPlatform(cp.platform)}
+                          isLoading={syncingPlatform === cp.platform}
+                          leftIcon={<RefreshCw size={12} />}
+                        >
+                          Sync
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* GitHub OAuth Connection */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-sm">
+            <Card className="p-6 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-indigo-400" /> GitHub Repository Sync
+                  <h3 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-[#d9541e]" /> GitHub Repository Sync
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
+                  <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-xl leading-relaxed">
                     Connect your GitHub account to sync commit contribution heatmaps, star metrics, and calculate repository health scores for your public developer profile.
                   </p>
                 </div>
@@ -615,128 +630,135 @@ function ProfileEditContent() {
                       href={`https://github.com/${githubAccount.github_username}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#d9541e]/10 text-[#d9541e] border border-[#d9541e]/25 hover:bg-[#d9541e]/20 transition flex items-center gap-1.5"
                     >
                       @{githubAccount.github_username}
                       <ExternalLink size={12} />
                     </a>
-                    <button
+                    <Button
                       type="button"
+                      variant="secondary"
+                      size="sm"
                       onClick={handleSyncGitHub}
-                      disabled={syncingGithub}
-                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-1.5 disabled:opacity-50"
-                      title="Sync latest GitHub data"
+                      isLoading={syncingGithub}
+                      leftIcon={<RefreshCw size={12} />}
                     >
-                      <RefreshCw size={13} className={syncingGithub ? 'animate-spin' : ''} />
-                      <span>{syncingGithub ? 'Syncing...' : 'Sync Now'}</span>
-                    </button>
+                      Sync Now
+                    </Button>
                     <button
                       type="button"
                       onClick={handleConnectGitHub}
-                      className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition"
-                      title="Reconnect GitHub account"
+                      className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition underline ml-1"
                     >
                       Reconnect
                     </button>
                   </div>
                 ) : (
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
+                    size="sm"
                     onClick={handleConnectGitHub}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-md transition flex items-center gap-2"
                   >
-                    <span>Connect GitHub</span>
-                  </button>
+                    Connect GitHub
+                  </Button>
                 )}
               </div>
 
               {githubAccount && (
-                <div className="pt-2 border-t border-slate-800/80 flex items-center gap-4 text-xs text-slate-400">
-                  <span>★ <strong className="text-white font-medium">{githubAccount.total_stars ?? 0}</strong> stars</span>
-                  <span>📁 <strong className="text-white font-medium">{githubAccount.repositories?.length ?? 0}</strong> synced repos</span>
-                  <span>👥 <strong className="text-white font-medium">{githubAccount.total_followers ?? 0}</strong> followers</span>
+                <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center gap-4 text-xs text-[var(--text-secondary)]">
+                  <span>★ <strong className="text-[var(--text-primary)] font-mono">{githubAccount.total_stars ?? 0}</strong> stars</span>
+                  <span>📁 <strong className="text-[var(--text-primary)] font-mono">{githubAccount.repositories?.length ?? 0}</strong> synced repos</span>
+                  <span>👥 <strong className="text-[var(--text-primary)] font-mono">{githubAccount.total_followers ?? 0}</strong> followers</span>
                 </div>
               )}
-            </div>
+            </Card>
           </div>
         )}
 
         {/* Tab 3: Social & Portfolio Links */}
         {activeTab === 'socials' && (
           <form onSubmit={handleSaveProfile} className="space-y-6">
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-sm">
-              <div className="flex items-center justify-between">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <h2 className="text-base font-bold text-white flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-indigo-400" /> Social & Web Profiles
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-[#d9541e]" /> Social & Web Profiles
+                  </CardTitle>
+                  <CardDescription>
                     Add direct links to your developer socials. Only non-empty links will appear on your public profile.
-                  </p>
+                  </CardDescription>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="primary"
+                  size="sm"
                   onClick={addSocialLink}
-                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                  leftIcon={<Plus size={13} />}
                 >
-                  <Plus size={14} /> Add Link
-                </button>
-              </div>
+                  Add Link
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {socialLinks.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-[var(--text-muted)] border border-dashed border-[var(--border-subtle)] rounded-lg">
+                    No social links added yet. Click &quot;Add Link&quot; to include LinkedIn, Twitter, GitHub, or your personal website.
+                  </div>
+                ) : (
+                  <div className="space-y-3 pt-1">
+                    {socialLinks.map((link, idx) => (
+                      <div key={idx} className="flex gap-2.5 items-center">
+                        <div className="w-40 shrink-0">
+                          <Select
+                            value={link.platform}
+                            onChange={(e) => updateSocialLink(idx, 'platform', e.target.value)}
+                            options={[
+                              { value: 'github', label: 'GitHub' },
+                              { value: 'linkedin', label: 'LinkedIn' },
+                              { value: 'twitter', label: 'Twitter / X' },
+                              { value: 'leetcode', label: 'LeetCode' },
+                              { value: 'codechef', label: 'CodeChef' },
+                              { value: 'codeforces', label: 'Codeforces' },
+                              { value: 'geeksforgeeks', label: 'GeeksforGeeks' },
+                              { value: 'portfolio', label: 'Personal Portfolio' },
+                            ]}
+                          />
+                        </div>
 
-              {socialLinks.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
-                  No social links added yet. Click &quot;Add Link&quot; to include LinkedIn, Twitter, GitHub, or your personal website.
-                </div>
-              ) : (
-                <div className="space-y-3 pt-2">
-                  {socialLinks.map((link, idx) => (
-                    <div key={idx} className="flex gap-3 items-center">
-                      <select
-                        value={link.platform}
-                        onChange={(e) => updateSocialLink(idx, 'platform', e.target.value)}
-                        className="px-3.5 py-2.5 border border-slate-700 text-white rounded-xl bg-slate-800 text-xs focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="github">GitHub</option>
-                        <option value="linkedin">LinkedIn</option>
-                        <option value="twitter">Twitter / X</option>
-                        <option value="leetcode">LeetCode</option>
-                        <option value="codechef">CodeChef</option>
-                        <option value="codeforces">Codeforces</option>
-                        <option value="geeksforgeeks">GeeksforGeeks</option>
-                        <option value="portfolio">Personal Portfolio</option>
-                      </select>
+                        <div className="flex-1">
+                          <Input
+                            type="url"
+                            value={link.url}
+                            onChange={(e) => updateSocialLink(idx, 'url', e.target.value)}
+                            placeholder="https://..."
+                          />
+                        </div>
 
-                      <input
-                        type="url"
-                        value={link.url}
-                        onChange={(e) => updateSocialLink(idx, 'url', e.target.value)}
-                        placeholder="https://..."
-                        className="flex-1 px-3.5 py-2.5 border border-slate-700 text-white rounded-xl bg-slate-800 text-xs focus:ring-2 focus:ring-indigo-500"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => removeSocialLink(idx)}
-                        className="p-2 text-slate-400 hover:text-red-400 transition"
-                        title="Remove link"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                        <button
+                          type="button"
+                          onClick={() => removeSocialLink(idx)}
+                          className="p-2 text-[var(--text-muted)] hover:text-red-500 transition cursor-pointer"
+                          title="Remove link"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             <div className="flex justify-end">
-              <button
+              <Button
                 type="submit"
-                disabled={saving}
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 text-sm transition disabled:opacity-50"
+                variant="primary"
+                size="md"
+                isLoading={saving}
+                leftIcon={<Save size={15} />}
               >
-                <Save size={16} />
-                <span>{saving ? 'Saving Changes...' : 'Save Social Links'}</span>
-              </button>
+                Save Social Links
+              </Button>
             </div>
           </form>
         )}

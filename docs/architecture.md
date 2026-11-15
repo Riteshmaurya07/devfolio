@@ -4,7 +4,14 @@ This document defines the complete architectural overhaul required to transition
 
 ## 1. Technology Stack
 
-*   **Frontend:** Next.js (React) with Tailwind CSS (located in `frontend/` directory)
+*   **Frontend:** Next.js (React) with Tailwind CSS v4 (located in `frontend/` directory)
+    *   *Design System:* Editorial calm aesthetic designed for dashboard visualization using the 60-30-10 palette rule:
+        *   **60% Canvas:** Warm Cream (`#f3eee3`) in Light Mode / Deep Black (`#111111`) in Dark Mode
+        *   **30% Structure & Typography:** Deep Black (`#111111`) in Light Mode / Warm Soft Cream (`#f3eee3`) in Dark Mode
+        *   **10% Accent:** Burnt Orange (`#d9541e`) and terracotta shades for active tabs, primary actions, and metrics
+    *   *Geometry:* Architectural, slightly rounded corners (`rounded-md` 6px, `rounded-lg` 8px) avoiding oversized or sci-fi pill shapes.
+    *   *Theme Engine:* System & manual Light/Dark mode with zero-flicker SSR hydration script and persistent `useThemeStore` + `ThemeToggle`.
+    *   *Global Component Suite:* Centralized reusable components in `frontend/src/components/ui/` (`Button`, `Card`, `Badge`, `Input`, `Textarea`, `Select`, `StatCard`, `ThemeToggle`, `Tabs`, `Modal`, `EmptyState`, `Icons` including `GithubIcon` & `GoogleIcon`).
 *   **Backend:** FastAPI (Python) (located in `backend/` directory)
 *   **Database:** PostgreSQL
 *   **Background Jobs & Notifications:** Celery (Worker + Beat) with Redis
