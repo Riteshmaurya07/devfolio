@@ -173,6 +173,12 @@ The system leverages **Celery and Redis** to decouple notifications from the mai
     *   `GET /api/platforms/analytics`
 *   **AI Advisor:**
     *   `GET /api/ai/chats` & `POST /api/ai/chats` & `POST /api/ai/chats/{chat_id}/message`
+*   **Public Profiles & Integrations Hub (Module 2 & 3):**
+    *   `GET /api/profiles/u/{username}` - Public developer profile data
+    *   `GET /api/platforms/u/{username}` - Public aggregated competitive coding platform metrics
+    *   `GET /api/github/stats/{username}` - Public GitHub sync stats & repositories
+    *   `GET /api/profiles/me` & `PUT /api/profiles/me` - Profile customization & optional social links
+    *   `GET /api/platforms/profiles` & `POST /api/platforms/connect` - Multi-platform competitive coding handles
 *   **Feed & Social Platform (Module 10):**
     *   `GET /api/feed` - Composite-cursor paginated feed (own + followed users' posts)
     *   `POST /api/feed/posts` - Create post (rate-limited: 10/hour, content max 5000 chars)

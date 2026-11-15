@@ -69,6 +69,18 @@ async def get_my_dashboard_summary(
         raise NotFoundError(message="User profile not found")
     return await service.get_dashboard_summary(profile.id)
 
+@router.get("/u/{username}")
+async def get_public_coding_summary(
+    username: str,
+    service: CodingDashboardService = Depends(get_coding_service),
+    db = Depends(get_db)
+):
+    profile_repo = ProfileRepository(db)
+    profile = await profile_repo.get_by_username(username)
+    if not profile:
+        raise NotFoundError(message=f"Profile @{username} not found")
+    return await service.get_dashboard_summary(profile.id)
+
 @router.post("/recommendations")
 async def get_ai_recommendations(
     current_user: User = Depends(get_current_user),

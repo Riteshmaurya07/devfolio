@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 import httpx
+from sqlalchemy.future import select
+from app.domains.profiles.models import Profile
 from app.domains.github.repository import GitHubRepository
 from app.domains.github.client import GitHubClient
 from app.domains.github.health_score import calculate_repo_health_score
@@ -130,8 +132,16 @@ class GitHubService:
         await self.repository.replace_repositories(account.id, repos_data)
         return await self.repository.get_by_profile_id(profile_id)
 
-    async def get_stats_by_username(self, username: str) -> GitHubAccount:
+    async def get_stats_by_username(self, username: str) -> Optional[GitHubAccount]:
         account = await self.repository.get_by_username(username)
+        if not account:
+            # Also check if profile_id matches a profile with this Devfolio username
+            res = await self.repository.db.execute(
+                select(Profile).where(Profile.username == username)
+            )
+            profile = res.scalars().first()
+            if profile:
+                account = await self.repository.get_by_profile_id(profile.id)
         if not account:
             raise NotFoundError(message=f"GitHub account for @{username} not connected")
         return account
